@@ -23,27 +23,42 @@ public class InventoryService {
     }
 
     public void updateBalance(String productName, BigDecimal inAmount, BigDecimal outAmount, boolean isIn) {
-        List<Inventory> entries = inventoryRepository.findAll();
-        BigDecimal balance = BigDecimal.ZERO;
+        // Retrieve the most recent entry for the given product
+        Inventory latestEntry = inventoryRepository.findTopByProductNameOrderByEntryDateDescIdDesc(productName);
 
-        for (Inventory entry : entries) {
-            if (entry.getProductName().equals(productName)) {
-                if (isIn) {
-                    balance = balance.add(entry.getInAmount() != null ? entry.getInAmount() : BigDecimal.ZERO);
-                } else {
-                    balance = balance.subtract(entry.getOutAmount() != null ? entry.getOutAmount() : BigDecimal.ZERO);
-                }
-            }
+        // Determine the current balance
+        BigDecimal currentBalance = (latestEntry != null) ? latestEntry.getBalance() : BigDecimal.ZERO;
+
+        // Calculate the new balance
+        BigDecimal newBalance = currentBalance;
+        if (isIn) {
+            newBalance = newBalance.add(inAmount);
+        } else {
+            newBalance = newBalance.subtract(outAmount);
         }
 
-        // Update balance for each entry
-        BigDecimal finalBalance = balance;
-        entries.forEach(entry -> {
-            if (entry.getProductName().equals(productName)) {
-                entry.setBalance(finalBalance);
-                inventoryRepository.save(entry);
-            }
-        });
+        // Check if we need to create a new entry
+        if (latestEntry == null || !newBalance.equals(latestEntry.getBalance())) {
+            Inventory newEntry = new Inventory();
+            newEntry.setProductName(productName);
+            newEntry.setEntryDate(String.valueOf(new java.sql.Date(System.currentTimeMillis()))); // Set current date
+            newEntry.setDescription(isIn ? "Purchase of Inventory" : "Sale of Merchandise");
+            newEntry.setCost(BigDecimal.ZERO); // Set an appropriate cost if needed
+            newEntry.setQuantity(0); // Set the appropriate quantity if needed
+            newEntry.setInAmount(isIn ? inAmount : BigDecimal.ZERO);
+            newEntry.setOutAmount(isIn ? BigDecimal.ZERO : outAmount);
+            newEntry.setBalance(newBalance);
+
+            // Save the new entry
+            inventoryRepository.save(newEntry);
+        }
+    }
+
+
+    public BigDecimal getLatestBalance(String productName) {
+        Inventory latestEntry = inventoryRepository.findLatestEntry(productName);
+        return (latestEntry != null) ? latestEntry.getBalance() : BigDecimal.ZERO;
     }
 }
+
 

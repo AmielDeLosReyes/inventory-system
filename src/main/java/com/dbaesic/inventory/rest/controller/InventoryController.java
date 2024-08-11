@@ -77,21 +77,24 @@ public class InventoryController {
             inventory.setOutAmount(inventory.getCost().multiply(BigDecimal.valueOf(inventory.getQuantity())));
         }
 
-        // Save inventory entry
+        // Save inventory entry and update balance
         log.info("Saving entry to database...");
-        inventoryService.saveEntry(inventory);
-
-        // Update balance
-        log.info("Updating inventory balance...");
         inventoryService.updateBalance(
                 inventory.getProductName(),
-                inventory.getInAmount(),
-                inventory.getOutAmount(),
-                inventory.getDescription().equals("Purchase of Inventory")
+                inventory.getInAmount() != null ? inventory.getInAmount() : BigDecimal.ZERO,
+                inventory.getOutAmount() != null ? inventory.getOutAmount() : BigDecimal.ZERO,
+                "Purchase of Inventory".equals(inventory.getDescription())
         );
 
         // Return JSON response
         return ResponseEntity.ok().body("{\"message\":\"Entry saved successfully\"}");
     }
+
+    @GetMapping("/latest-balance/{productName}")
+    public ResponseEntity<BigDecimal> getLatestBalance(@PathVariable String productName) {
+        BigDecimal latestBalance = inventoryService.getLatestBalance(productName);
+        return ResponseEntity.ok(latestBalance);
+    }
 }
+
 

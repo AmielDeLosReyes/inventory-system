@@ -87,9 +87,12 @@
 					<label for="quantity">Quantity</label>
 					<input type="number" class="form-control" id="quantity" name="quantity" required>
 				</div>
+				<div class="form-group">
+					<label for="currentBalance">Current Balance</label>
+					<input type="text" class="form-control" id="currentBalance" name="currentBalance" readonly>
+				</div>
 				<button type="submit" class="btn btn-primary">Add Entry</button>
 			</form>
-
 		</div>
 	</div>
 
@@ -114,27 +117,44 @@
 	const inventoryTables = document.getElementById('inventoryTables');
 	const exportButton = document.getElementById('exportButton');
 	const costInput = document.getElementById('cost');
+	const currentBalanceInput = document.getElementById('currentBalance'); // New input for current balance
 	let currentProduct = '';
 
 	// Fetch products and populate the product selector
 	fetch('/products')
-	    .then(response => response.json())
-	    .then(products => {
-	        // Clear any existing options
-	        productSelect.innerHTML = '<option value="" disabled selected>Select Product</option>';
+		.then(response => response.json())
+		.then(products => {
+			// Clear any existing options
+			productSelect.innerHTML = '<option value="" disabled selected>Select Product</option>';
 
-	        products.forEach(product => {
-	            const option = document.createElement('option');
-	            option.value = product.name;
-	            option.textContent = product.name;
-	            productSelect.appendChild(option);
-	        });
-	    })
-	    .catch(error => console.error('Error fetching products:', error));
+			products.forEach(product => {
+				const option = document.createElement('option');
+				option.value = product.name;
+				option.textContent = product.name;
+				productSelect.appendChild(option);
+			});
+		})
+		.catch(error => console.error('Error fetching products:', error));
 
 	// Fetch cost of the selected product
 	function fetchProductCost(productName) {
-	    fetch(`/products/${productName}/cost`)
+		fetch(`/products/${productName}/cost`)
+			.then(response => {
+				if (!response.ok) {
+					throw new Error('Network response was not ok');
+				}
+				return response.json();
+			})
+			.then(data => {
+				// Assuming the response data is just the cost value
+				costInput.value = data || '';
+			})
+			.catch(error => console.error('Error fetching product cost:', error));
+	}
+
+	// Fetch the latest balance for the selected product
+	function fetchLatestBalance(productName) {
+	    return fetch(`/inventory/latest-balance?productName=${encodeURIComponent(productName)}`)
 	        .then(response => {
 	            if (!response.ok) {
 	                throw new Error('Network response was not ok');
@@ -142,162 +162,184 @@
 	            return response.json();
 	        })
 	        .then(data => {
-	            // Assuming the response data is just the cost value
-	            costInput.value = data || '';
+	            // Assuming the response data is the latest balance value
+	            return data.latestBalance || 0;
 	        })
-	        .catch(error => console.error('Error fetching product cost:', error));
+	        .catch(error => console.error('Error fetching latest balance:', error));
 	}
-
 
 	// Handle product selection
 	productSelect.addEventListener('change', function() {
-    currentProduct = productSelect.value;
-    document.getElementById('productName').value = currentProduct; // Set the hidden field value
-    inventoryFormCard.style.display = 'block';
-    fetchProductCost(currentProduct);
-    updateTables();
+	    currentProduct = productSelect.value;
+	    document.getElementById('productName').value = currentProduct; // Set the hidden field value
+	    inventoryFormCard.style.display = 'block';
+	    fetchProductCost(currentProduct);
+	    fetchLatestBalance(currentProduct).then(latestBalance => {
+	        if (latestBalance <= 0 || latestBalance === undefined) {
+	            currentBalanceInput.value = 'Out of Stock!';
+	        } else {
+	            currentBalanceInput.value = latestBalance.toFixed(2); // Display the balance
+	        }
+	        // Store the latest balance in the inventoryData object
+	        inventoryData[currentProduct] = inventoryData[currentProduct] || [];
+	        if (inventoryData[currentProduct].length > 0) {
+	            inventoryData[currentProduct][inventoryData[currentProduct].length - 1].balance = latestBalance;
+	        }
+	        updateTables();
+	    });
 	});
 
 
 	// Handle inventory form submission
 	document.getElementById('inventoryForm').addEventListener('submit', function(event) {
-    event.preventDefault();
+		event.preventDefault();
 
-    const date = document.getElementById('entryDate').value;
-    const description = document.getElementById('description').value;
-    const cost = parseFloat(costInput.value);
-    const quantity = parseInt(document.getElementById('quantity').value);
+		const date = document.getElementById('entryDate').value;
+		const description = document.getElementById('description').value;
+		const cost = parseFloat(costInput.value);
+		const quantity = parseInt(document.getElementById('quantity').value);
 
-    let inAmount = 0;
-    let outAmount = 0;
-    let currentBalance = inventoryData[currentProduct] && inventoryData[currentProduct].length > 0 ?
-        inventoryData[currentProduct][inventoryData[currentProduct].length - 1].balance : 0;
+		let inAmount = 0;
+		let outAmount = 0;
+		let currentBalance = inventoryData[currentProduct] && inventoryData[currentProduct].length > 0 ?
+			inventoryData[currentProduct][inventoryData[currentProduct].length - 1].balance : 0;
 
-    if (description === 'Purchase of Inventory') {
-        inAmount = cost * quantity;
-        currentBalance += inAmount;
-    } else if (description === 'Sale of Merchandise') {
-        outAmount = cost * quantity;
-        currentBalance -= outAmount;
-    }
+		if (description === 'Purchase of Inventory') {
+			inAmount = cost * quantity;
+			currentBalance += inAmount;
+		} else if (description === 'Sale of Merchandise') {
+			outAmount = cost * quantity;
+			currentBalance -= outAmount;
+		}
 
-    const entry = {
-        productName: currentProduct,
-        entryDate: date,
-        description: description,
-        cost: cost,
-        quantity: quantity,
-        inAmount: inAmount,
-        outAmount: outAmount,
-        balance: currentBalance,
-        remarks: '' // Add any remarks if needed
-    };
+		const entry = {
+			productName: currentProduct,
+			entryDate: date,
+			description: description,
+			cost: cost,
+			quantity: quantity,
+			inAmount: inAmount,
+			outAmount: outAmount,
+			balance: currentBalance,
+			remarks: '' // Add any remarks if needed
+		};
 
-    if (!inventoryData[currentProduct]) {
-        inventoryData[currentProduct] = [];
-    }
-    inventoryData[currentProduct].push(entry);
+		if (!inventoryData[currentProduct]) {
+			inventoryData[currentProduct] = [];
+		}
+		inventoryData[currentProduct].push(entry);
 
-    // Save entry to server
-    fetch('/inventory/add', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(entry)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(() => {
-        console.log('Entry saved, updating tables...');
-        updateTables();
-    })
-    .catch(error => console.error('Error saving entry:', error));
+		// Save entry to server
+		fetch('/inventory/add', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(entry)
+		})
+		.then(response => {
+			if (!response.ok) {
+				throw new Error('Network response was not ok');
+			}
+			return response.json();
+		})
+		.then(() => {
+			console.log('Entry saved, updating tables...');
+			updateTables();
+		})
+		.catch(error => console.error('Error saving entry:', error));
 	});
 
 	// Handle update Tables ajax
 	function updateTables() {
-    inventoryTables.innerHTML = '';
+	    inventoryTables.innerHTML = '';
 
-    Object.keys(inventoryData).forEach(product => {
-        const entries = inventoryData[product];
-        let tableHTML = `
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h2>${product}</h2>
-                </div>
-                <div class="card-body">
-                    <div class="table-container">
-                        <table class="table table-bordered">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Description</th>
-                                    <th>Cost</th>
-                                    <th>Quantity</th>
-                                    <th>In Amount</th>
-                                    <th>Out Amount</th>
-                                    <th>Balance</th>
-                                    <th>Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-        `;
+	    Object.keys(inventoryData).forEach(product => {
+	        const entries = inventoryData[product];
+	        let tableHTML = `
+	            <div class="card mb-4">
+	                <div class="card-header">
+	                    <h2>${product}</h2>
+	                </div>
+	                <div class="card-body">
+	        `;
 
-        entries.forEach(entry => {
-            tableHTML += `<tr>
-                <td>${entry.entryDate}</td>
-                <td>${entry.description}</td>
-                <td>${entry.cost.toFixed(2)}</td>
-                <td>${entry.quantity}</td>
-                <td>${entry.inAmount.toFixed(2)}</td>
-                <td>${entry.outAmount.toFixed(2)}</td>
-                <td>${entry.balance.toFixed(2)}</td>
-                <td>${entry.remarks}</td>
-            </tr>`;
-        });
+	        if (entries.length === 0 || entries[entries.length - 1].balance <= 0) {
+	            tableHTML += `
+	                <p class="text-danger">Out of Stock!</p>
+	            `;
+	        } else {
+	            tableHTML += `
+	                <div class="table-container">
+	                    <table class="table table-striped">
+	                        <thead>
+	                            <tr>
+	                                <th>Date</th>
+	                                <th>Description</th>
+	                                <th>Cost</th>
+	                                <th>Quantity</th>
+	                                <th>In Amount</th>
+	                                <th>Out Amount</th>
+	                                <th>Balance</th>
+	                                <th>Remarks</th>
+	                            </tr>
+	                        </thead>
+	                        <tbody>
+	            `;
 
-        tableHTML += `
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        `;
+	            entries.forEach(entry => {
+	                tableHTML += `
+	                    <tr>
+	                        <td>${entry.entryDate}</td>
+	                        <td>${entry.description}</td>
+	                        <td>${entry.cost.toFixed(2)}</td>
+	                        <td>${entry.quantity}</td>
+	                        <td>${entry.inAmount.toFixed(2)}</td>
+	                        <td>${entry.outAmount.toFixed(2)}</td>
+	                        <td>${entry.balance.toFixed(2)}</td>
+	                        <td>${entry.remarks}</td>
+	                    </tr>
+	                `;
+	            });
 
-        inventoryTables.insertAdjacentHTML('beforeend', tableHTML);
-    });
+	            tableHTML += `
+	                        </tbody>
+	                    </table>
+	                </div>
+	            `;
+	        }
+
+	        tableHTML += `
+	            </div>
+	        </div>
+	        `;
+
+	        inventoryTables.innerHTML += tableHTML;
+	    });
 	}
 
 
+	// Handle export to Excel
 	exportButton.addEventListener('click', function() {
 		const wb = XLSX.utils.book_new();
-
 		Object.keys(inventoryData).forEach(product => {
-			const entries = inventoryData[product];
-			const wsData = [
-				['Date', 'Description', 'Cost', 'Quantity', 'In', 'Out', 'Balance', 'Remarks'],
-				...entries.map(entry => [
-					entry.date,
-					entry.description,
-					entry.cost.toFixed(2),
-					entry.quantity,
-					entry.in.toFixed(2),
-					entry.out.toFixed(2),
-					entry.balance.toFixed(2),
-					entry.remarks
-				])
-			];
-
-			const ws = XLSX.utils.aoa_to_sheet(wsData);
+			const wsData = inventoryData[product].map(entry => [
+				entry.entryDate,
+				entry.description,
+				entry.cost.toFixed(2),
+				entry.quantity,
+				entry.inAmount.toFixed(2),
+				entry.outAmount.toFixed(2),
+				entry.balance.toFixed(2),
+				entry.remarks
+			]);
+			const ws = XLSX.utils.aoa_to_sheet([
+				['Date', 'Description', 'Cost', 'Quantity', 'In Amount', 'Out Amount', 'Balance', 'Remarks'],
+				...wsData
+			]);
 			XLSX.utils.book_append_sheet(wb, ws, product);
 		});
-
-		XLSX.writeFile(wb, 'inventory.xlsx');
+		XLSX.writeFile(wb, 'InventoryData.xlsx');
 	});
 </script>
 </body>
