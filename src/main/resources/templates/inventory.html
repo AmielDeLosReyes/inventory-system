@@ -61,14 +61,19 @@
 			<h2>Inventory Entry</h2>
 		</div>
 		<div class="card-body">
-			<form id="inventoryForm">
+			<form id="inventoryForm" method="post" action="/inventory/add">
+				<div class="form-group">
+					<label for="productSelect">Product</label>
+					<input type="hidden" id="productName" name="productName">
+					<!-- The product select will remain unchanged -->
+				</div>
 				<div class="form-group">
 					<label for="entryDate">Date</label>
-					<input type="date" class="form-control" id="entryDate" required>
+					<input type="date" class="form-control" id="entryDate" name="entryDate" required>
 				</div>
 				<div class="form-group">
 					<label for="description">Description</label>
-					<select class="form-control" id="description" required>
+					<select class="form-control" id="description" name="description" required>
 						<option value="" disabled selected>Select Description</option>
 						<option value="Purchase of Inventory">Purchase of Inventory</option>
 						<option value="Sale of Merchandise">Sale of Merchandise</option>
@@ -76,14 +81,15 @@
 				</div>
 				<div class="form-group">
 					<label for="cost">Cost</label>
-					<input type="number" class="form-control" id="cost" required readonly>
+					<input type="number" class="form-control" id="cost" name="cost" required readonly>
 				</div>
 				<div class="form-group">
 					<label for="quantity">Quantity</label>
-					<input type="number" class="form-control" id="quantity" required>
+					<input type="number" class="form-control" id="quantity" name="quantity" required>
 				</div>
 				<button type="submit" class="btn btn-primary">Add Entry</button>
 			</form>
+
 		</div>
 	</div>
 
@@ -145,117 +151,128 @@
 
 	// Handle product selection
 	productSelect.addEventListener('change', function() {
-	    currentProduct = productSelect.value;
-	    inventoryFormCard.style.display = 'block';
-	    fetchProductCost(currentProduct);
-	    updateTables();
+    currentProduct = productSelect.value;
+    document.getElementById('productName').value = currentProduct; // Set the hidden field value
+    inventoryFormCard.style.display = 'block';
+    fetchProductCost(currentProduct);
+    updateTables();
 	});
 
 
 	// Handle inventory form submission
 	document.getElementById('inventoryForm').addEventListener('submit', function(event) {
-		event.preventDefault();
+    event.preventDefault();
 
-		const date = document.getElementById('entryDate').value;
-		const description = document.getElementById('description').value;
-		const cost = parseFloat(costInput.value);
-		const quantity = parseInt(document.getElementById('quantity').value);
+    const date = document.getElementById('entryDate').value;
+    const description = document.getElementById('description').value;
+    const cost = parseFloat(costInput.value);
+    const quantity = parseInt(document.getElementById('quantity').value);
 
-		let inAmount = 0;
-		let outAmount = 0;
-		let currentBalance = inventoryData[currentProduct] && inventoryData[currentProduct].length > 0 ?
-			inventoryData[currentProduct][inventoryData[currentProduct].length - 1].balance : 0;
+    let inAmount = 0;
+    let outAmount = 0;
+    let currentBalance = inventoryData[currentProduct] && inventoryData[currentProduct].length > 0 ?
+        inventoryData[currentProduct][inventoryData[currentProduct].length - 1].balance : 0;
 
-		if (description === 'Purchase of Inventory') {
-			inAmount = cost * quantity;
-			currentBalance += inAmount;
-		} else if (description === 'Sale of Merchandise') {
-			outAmount = cost * quantity;
-			currentBalance -= outAmount;
-		}
+    if (description === 'Purchase of Inventory') {
+        inAmount = cost * quantity;
+        currentBalance += inAmount;
+    } else if (description === 'Sale of Merchandise') {
+        outAmount = cost * quantity;
+        currentBalance -= outAmount;
+    }
 
-		const entry = {
-			date,
-			description,
-			cost,
-			quantity,
-			in: inAmount,
-			out: outAmount,
-			balance: currentBalance,
-			remarks: ''
-		};
+    const entry = {
+        productName: currentProduct,
+        entryDate: date,
+        description: description,
+        cost: cost,
+        quantity: quantity,
+        inAmount: inAmount,
+        outAmount: outAmount,
+        balance: currentBalance,
+        remarks: '' // Add any remarks if needed
+    };
 
-		if (!inventoryData[currentProduct]) {
-			inventoryData[currentProduct] = [];
-		}
-		inventoryData[currentProduct].push(entry);
+    if (!inventoryData[currentProduct]) {
+        inventoryData[currentProduct] = [];
+    }
+    inventoryData[currentProduct].push(entry);
 
-		// Save entry to server
-		fetch('/inventory/add', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(entry)
-		})
-		.then(response => response.json())
-		.then(() => {
-			updateTables();
-		});
+    // Save entry to server
+    fetch('/inventory/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(entry)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(() => {
+        console.log('Entry saved, updating tables...');
+        updateTables();
+    })
+    .catch(error => console.error('Error saving entry:', error));
 	});
 
+	// Handle update Tables ajax
 	function updateTables() {
-		inventoryTables.innerHTML = '';
+    inventoryTables.innerHTML = '';
 
-		Object.keys(inventoryData).forEach(product => {
-			const entries = inventoryData[product];
-			let tableHTML = `
-				<div class="card mb-4">
-					<div class="card-header">
-						<h2>${product}</h2>
-					</div>
-					<div class="card-body">
-						<div class="table-container">
-							<table class="table table-bordered">
-								<thead>
-									<tr>
-										<th>Date</th>
-										<th>Description</th>
-										<th>Cost</th>
-										<th>Quantity</th>
-										<th>In</th>
-										<th>Out</th>
-										<th>Balance</th>
-										<th>Remarks</th>
-									</tr>
-								</thead>
-								<tbody>
-			`;
+    Object.keys(inventoryData).forEach(product => {
+        const entries = inventoryData[product];
+        let tableHTML = `
+            <div class="card mb-4">
+                <div class="card-header">
+                    <h2>${product}</h2>
+                </div>
+                <div class="card-body">
+                    <div class="table-container">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Description</th>
+                                    <th>Cost</th>
+                                    <th>Quantity</th>
+                                    <th>In Amount</th>
+                                    <th>Out Amount</th>
+                                    <th>Balance</th>
+                                    <th>Remarks</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+        `;
 
-			entries.forEach(entry => {
-				tableHTML += `<tr>
-					<td>${entry.date}</td>
-					<td>${entry.description}</td>
-					<td>${entry.cost.toFixed(2)}</td>
-					<td>${entry.quantity}</td>
-					<td>${entry.in.toFixed(2)}</td>
-					<td>${entry.out.toFixed(2)}</td>
-					<td>${entry.balance.toFixed(2)}</td>
-					<td>${entry.remarks}</td>
-				</tr>`;
-			});
+        entries.forEach(entry => {
+            tableHTML += `<tr>
+                <td>${entry.entryDate}</td>
+                <td>${entry.description}</td>
+                <td>${entry.cost.toFixed(2)}</td>
+                <td>${entry.quantity}</td>
+                <td>${entry.inAmount.toFixed(2)}</td>
+                <td>${entry.outAmount.toFixed(2)}</td>
+                <td>${entry.balance.toFixed(2)}</td>
+                <td>${entry.remarks}</td>
+            </tr>`;
+        });
 
-			tableHTML += `
-								</tbody>
-							</table>
-						</div>
-					</div>
-				</div>
-			`;
+        tableHTML += `
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
 
-			inventoryTables.insertAdjacentHTML('beforeend', tableHTML);
-		});
+        inventoryTables.insertAdjacentHTML('beforeend', tableHTML);
+    });
 	}
+
 
 	exportButton.addEventListener('click', function() {
 		const wb = XLSX.utils.book_new();

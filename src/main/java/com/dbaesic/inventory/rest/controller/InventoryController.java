@@ -4,7 +4,9 @@ import com.dbaesic.inventory.rest.model.Inventory;
 import com.dbaesic.inventory.rest.model.Product;
 import com.dbaesic.inventory.rest.service.InventoryService;
 import com.dbaesic.inventory.rest.service.ProductService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
@@ -13,6 +15,7 @@ import java.math.BigDecimal;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Controller
 @RequestMapping("/inventory")
 public class InventoryController {
@@ -45,29 +48,41 @@ public class InventoryController {
     }
 
     @PostMapping("/add")
-    public String addEntry(@ModelAttribute Inventory inventory) {
+    public ResponseEntity<?> addEntry(@RequestBody Inventory inventory) {
+        log.info("===== Inside addEntry() =====" + getClass());
+
+        // Log the received inventory details
+        log.info("Received Inventory Entry: " +
+                "ProductName='" + inventory.getProductName() + "', " +
+                "EntryDate='" + inventory.getEntryDate() + "', " +
+                "Description='" + inventory.getDescription() + "', " +
+                "Cost='" + inventory.getCost() + "', " +
+                "Quantity='" + inventory.getQuantity() + "', " +
+                "InAmount='" + inventory.getInAmount() + "', " +
+                "OutAmount='" + inventory.getOutAmount() + "'");
+
         // Retrieve the product details
         Product product = productService.getProductByName(inventory.getProductName());
         if (product != null) {
             inventory.setCost(product.getPrice());
+            log.info("Product price: " + product.getPrice());
         }
 
         // Calculate inAmount and outAmount based on description
-        if (inventory.getDescription().equals("Purchase of Inventory")) {
+        if ("Purchase of Inventory".equals(inventory.getDescription())) {
+            log.info("Invoking Purchase of Inventory...");
             inventory.setInAmount(inventory.getCost().multiply(BigDecimal.valueOf(inventory.getQuantity())));
-            inventory.setOutAmount(BigDecimal.ZERO);
-        } else if (inventory.getDescription().equals("Sale of Merchandise")) {
-            inventory.setInAmount(BigDecimal.ZERO);
+        } else if ("Sale of Merchandise".equals(inventory.getDescription())) {
+            log.info("Invoking Sale of Merchandise...");
             inventory.setOutAmount(inventory.getCost().multiply(BigDecimal.valueOf(inventory.getQuantity())));
-        } else {
-            inventory.setInAmount(BigDecimal.ZERO);
-            inventory.setOutAmount(BigDecimal.ZERO);
         }
 
         // Save inventory entry
+        log.info("Saving entry to database...");
         inventoryService.saveEntry(inventory);
 
         // Update balance
+        log.info("Updating inventory balance...");
         inventoryService.updateBalance(
                 inventory.getProductName(),
                 inventory.getInAmount(),
@@ -75,7 +90,8 @@ public class InventoryController {
                 inventory.getDescription().equals("Purchase of Inventory")
         );
 
-        return "redirect:/inventory";
+        // Return JSON response
+        return ResponseEntity.ok().body("{\"message\":\"Entry saved successfully\"}");
     }
 }
 

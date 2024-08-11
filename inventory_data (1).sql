@@ -15,7 +15,7 @@ CREATE TABLE inventory (
     remarks TEXT
 );
 
-select * from inventory_management;
+select * from inventory;
 
 CREATE TABLE products (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

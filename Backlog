@@ -1,0 +1,5 @@
+Features:
+- When balance of a product is 0, put in remarks column "Reorder!!".
+- Save entries to database.
+- Add Sales Summary Sheet on the export excel.
+- Integrate Shopee API
