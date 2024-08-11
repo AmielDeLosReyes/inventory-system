@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Inventory Management</title>
+	<link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+	<style>
+		body {
+			font-family: Arial, sans-serif;
+		}
+		.card {
+			margin-bottom: 20px;
+		}
+		.card-header {
+			background-color: #007bff;
+			color: white;
+			font-size: 1.25rem;
+		}
+		.card-body {
+			padding: 20px;
+		}
+		table {
+			width: 100%;
+		}
+		th, td {
+			text-align: center;
+			padding: 8px;
+		}
+		th {
+			background-color: #f2f2f2;
+		}
+		.table-container {
+			overflow-x: auto;
+		}
+	</style>
+</head>
+<body>
+<div class="container">
+	<h1 class="my-4">Inventory Management</h1>
+
+	<!-- Product Selector -->
+	<div class="card mb-4">
+		<div class="card-header">
+			<h2>Select Product</h2>
+		</div>
+		<div class="card-body">
+			<div class="form-group">
+				<label for="productSelect">Product</label>
+				<select class="form-control" id="productSelect" required>
+					<option value="" disabled selected>Select Product</option>
+					<!-- Options will be populated dynamically -->
+				</select>
+			</div>
+		</div>
+	</div>
+
+	<!-- Inventory Form -->
+	<div class="card mb-4" id="inventoryFormCard" style="display: none;">
+		<div class="card-header">
+			<h2>Inventory Entry</h2>
+		</div>
+		<div class="card-body">
+			<form id="inventoryForm">
+				<div class="form-group">
+					<label for="entryDate">Date</label>
+					<input type="date" class="form-control" id="entryDate" required>
+				</div>
+				<div class="form-group">
+					<label for="description">Description</label>
+					<select class="form-control" id="description" required>
+						<option value="" disabled selected>Select Description</option>
+						<option value="Purchase of Inventory">Purchase of Inventory</option>
+						<option value="Sale of Merchandise">Sale of Merchandise</option>
+					</select>
+				</div>
+				<div class="form-group">
+					<label for="cost">Cost</label>
+					<input type="number" class="form-control" id="cost" required readonly>
+				</div>
+				<div class="form-group">
+					<label for="quantity">Quantity</label>
+					<input type="number" class="form-control" id="quantity" required>
+				</div>
+				<button type="submit" class="btn btn-primary">Add Entry</button>
+			</form>
+		</div>
+	</div>
+
+	<!-- Inventory Tables -->
+	<div id="inventoryTables">
+		<!-- Tables will be added dynamically here -->
+	</div>
+
+	<!-- Export Button -->
+	<div class="card">
+		<div class="card-body">
+			<button id="exportButton" class="btn btn-success mt-4">Export to Excel</button>
+		</div>
+	</div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.17.0/xlsx.full.min.js"></script>
+<script>
+	const inventoryData = {};
+	const productSelect = document.getElementById('productSelect');
+	const inventoryFormCard = document.getElementById('inventoryFormCard');
+	const inventoryTables = document.getElementById('inventoryTables');
+	const exportButton = document.getElementById('exportButton');
+	const costInput = document.getElementById('cost');
+	let currentProduct = '';
+
+	// Fetch products and populate the product selector
+	fetch('/products')
+	    .then(response => response.json())
+	    .then(products => {
+	        // Clear any existing options
+	        productSelect.innerHTML = '<option value="" disabled selected>Select Product</option>';
+
+	        products.forEach(product => {
+	            const option = document.createElement('option');
+	            option.value = product.name;
+	            option.textContent = product.name;
+	            productSelect.appendChild(option);
+	        });
+	    })
+	    .catch(error => console.error('Error fetching products:', error));
+
+	// Fetch cost of the selected product
+	function fetchProductCost(productName) {
+	    fetch(`/products/${productName}/cost`)
+	        .then(response => {
+	            if (!response.ok) {
+	                throw new Error('Network response was not ok');
+	            }
+	            return response.json();
+	        })
+	        .then(data => {
+	            // Assuming the response data is just the cost value
+	            costInput.value = data || '';
+	        })
+	        .catch(error => console.error('Error fetching product cost:', error));
+	}
+
+
+	// Handle product selection
+	productSelect.addEventListener('change', function() {
+	    currentProduct = productSelect.value;
+	    inventoryFormCard.style.display = 'block';
+	    fetchProductCost(currentProduct);
+	    updateTables();
+	});
+
+
+	// Handle inventory form submission
+	document.getElementById('inventoryForm').addEventListener('submit', function(event) {
+		event.preventDefault();
+
+		const date = document.getElementById('entryDate').value;
+		const description = document.getElementById('description').value;
+		const cost = parseFloat(costInput.value);
+		const quantity = parseInt(document.getElementById('quantity').value);
+
+		let inAmount = 0;
+		let outAmount = 0;
+		let currentBalance = inventoryData[currentProduct] && inventoryData[currentProduct].length > 0 ?
+			inventoryData[currentProduct][inventoryData[currentProduct].length - 1].balance : 0;
+
+		if (description === 'Purchase of Inventory') {
+			inAmount = cost * quantity;
+			currentBalance += inAmount;
+		} else if (description === 'Sale of Merchandise') {
+			outAmount = cost * quantity;
+			currentBalance -= outAmount;
+		}
+
+		const entry = {
+			date,
+			description,
+			cost,
+			quantity,
+			in: inAmount,
+			out: outAmount,
+			balance: currentBalance,
+			remarks: ''
+		};
+
+		if (!inventoryData[currentProduct]) {
+			inventoryData[currentProduct] = [];
+		}
+		inventoryData[currentProduct].push(entry);
+
+		// Save entry to server
+		fetch('/inventory/add', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json'
+			},
+			body: JSON.stringify(entry)
+		})
+		.then(response => response.json())
+		.then(() => {
+			updateTables();
+		});
+	});
+
+	function updateTables() {
+		inventoryTables.innerHTML = '';
+
+		Object.keys(inventoryData).forEach(product => {
+			const entries = inventoryData[product];
+			let tableHTML = `
+				<div class="card mb-4">
+					<div class="card-header">
+						<h2>${product}</h2>
+					</div>
+					<div class="card-body">
+						<div class="table-container">
+							<table class="table table-bordered">
+								<thead>
+									<tr>
+										<th>Date</th>
+										<th>Description</th>
+										<th>Cost</th>
+										<th>Quantity</th>
+										<th>In</th>
+										<th>Out</th>
+										<th>Balance</th>
+										<th>Remarks</th>
+									</tr>
+								</thead>
+								<tbody>
+			`;
+
+			entries.forEach(entry => {
+				tableHTML += `<tr>
+					<td>${entry.date}</td>
+					<td>${entry.description}</td>
+					<td>${entry.cost.toFixed(2)}</td>
+					<td>${entry.quantity}</td>
+					<td>${entry.in.toFixed(2)}</td>
+					<td>${entry.out.toFixed(2)}</td>
+					<td>${entry.balance.toFixed(2)}</td>
+					<td>${entry.remarks}</td>
+				</tr>`;
+			});
+
+			tableHTML += `
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			`;
+
+			inventoryTables.insertAdjacentHTML('beforeend', tableHTML);
+		});
+	}
+
+	exportButton.addEventListener('click', function() {
+		const wb = XLSX.utils.book_new();
+
+		Object.keys(inventoryData).forEach(product => {
+			const entries = inventoryData[product];
+			const wsData = [
+				['Date', 'Description', 'Cost', 'Quantity', 'In', 'Out', 'Balance', 'Remarks'],
+				...entries.map(entry => [
+					entry.date,
+					entry.description,
+					entry.cost.toFixed(2),
+					entry.quantity,
+					entry.in.toFixed(2),
+					entry.out.toFixed(2),
+					entry.balance.toFixed(2),
+					entry.remarks
+				])
+			];
+
+			const ws = XLSX.utils.aoa_to_sheet(wsData);
+			XLSX.utils.book_append_sheet(wb, ws, product);
+		});
+
+		XLSX.writeFile(wb, 'inventory.xlsx');
+	});
+</script>
+</body>
+</html>
