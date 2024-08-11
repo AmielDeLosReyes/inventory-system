@@ -2,12 +2,14 @@ package com.dbaesic.inventory.rest.service;
 
 import com.dbaesic.inventory.rest.model.Inventory;
 import com.dbaesic.inventory.rest.repository.InventoryRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
 
+@Slf4j
 @Service
 public class InventoryService {
 
@@ -56,9 +58,12 @@ public class InventoryService {
 
 
     public BigDecimal getLatestBalance(String productName) {
-        Inventory latestEntry = inventoryRepository.findLatestEntry(productName);
+        log.info("=== Fetching Latest Balance for {}", productName);
+        Inventory latestEntry = inventoryRepository.findLatestEntryByProductName(productName);
         return (latestEntry != null) ? latestEntry.getBalance() : BigDecimal.ZERO;
     }
+
+
 }
 
 

@@ -45,5 +45,12 @@ INSERT INTO products (name, price) VALUES
     ('Olivia', 55);
     
     
+SELECT *
+FROM inventory
+WHERE product_name = 'Georgina'
+ORDER BY entry_date DESC, id DESC
+LIMIT 1;
+
+truncate table inventory;
 
 

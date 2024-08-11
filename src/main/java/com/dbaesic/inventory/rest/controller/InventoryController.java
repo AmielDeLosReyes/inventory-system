@@ -12,7 +12,9 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -72,28 +74,38 @@ public class InventoryController {
         if ("Purchase of Inventory".equals(inventory.getDescription())) {
             log.info("Invoking Purchase of Inventory...");
             inventory.setInAmount(inventory.getCost().multiply(BigDecimal.valueOf(inventory.getQuantity())));
+            inventory.setOutAmount(BigDecimal.ZERO); // Ensure outAmount is zero for purchases
         } else if ("Sale of Merchandise".equals(inventory.getDescription())) {
             log.info("Invoking Sale of Merchandise...");
             inventory.setOutAmount(inventory.getCost().multiply(BigDecimal.valueOf(inventory.getQuantity())));
+            inventory.setInAmount(BigDecimal.ZERO); // Ensure inAmount is zero for sales
         }
+
+        // Ensure quantity and cost are set before saving
+        inventory.setQuantity(inventory.getQuantity() != 0 ? inventory.getQuantity() : 0);
+        inventory.setCost(inventory.getCost() != null ? inventory.getCost() : BigDecimal.ZERO);
 
         // Save inventory entry and update balance
         log.info("Saving entry to database...");
-        inventoryService.updateBalance(
-                inventory.getProductName(),
-                inventory.getInAmount() != null ? inventory.getInAmount() : BigDecimal.ZERO,
-                inventory.getOutAmount() != null ? inventory.getOutAmount() : BigDecimal.ZERO,
-                "Purchase of Inventory".equals(inventory.getDescription())
-        );
+        inventoryService.saveEntry(inventory); // Save the new entry first
+//        inventoryService.updateBalance(
+//                inventory.getProductName(),
+//                inventory.getInAmount() != null ? inventory.getInAmount() : BigDecimal.ZERO,
+//                inventory.getOutAmount() != null ? inventory.getOutAmount() : BigDecimal.ZERO,
+//                "Purchase of Inventory".equals(inventory.getDescription())
+//        );
 
         // Return JSON response
         return ResponseEntity.ok().body("{\"message\":\"Entry saved successfully\"}");
     }
 
-    @GetMapping("/latest-balance/{productName}")
-    public ResponseEntity<BigDecimal> getLatestBalance(@PathVariable String productName) {
-        BigDecimal latestBalance = inventoryService.getLatestBalance(productName);
-        return ResponseEntity.ok(latestBalance);
+
+    @GetMapping("/latest-balance")
+    public ResponseEntity<Map<String, Object>> getLatestBalance(@RequestParam String productName) {
+        BigDecimal latestBalance = inventoryService.getLatestBalance(productName); // Fetch from service
+        Map<String, Object> response = new HashMap<>();
+        response.put("latestBalance", latestBalance);
+        return ResponseEntity.ok(response);
     }
 }
 

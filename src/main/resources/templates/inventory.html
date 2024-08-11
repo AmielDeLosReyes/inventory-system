@@ -190,65 +190,76 @@
 	});
 
 
+
 	// Handle inventory form submission
 	document.getElementById('inventoryForm').addEventListener('submit', function(event) {
-		event.preventDefault();
+    event.preventDefault();
 
-		const date = document.getElementById('entryDate').value;
-		const description = document.getElementById('description').value;
-		const cost = parseFloat(costInput.value);
-		const quantity = parseInt(document.getElementById('quantity').value);
+    const date = document.getElementById('entryDate').value;
+    const description = document.getElementById('description').value;
+    const cost = parseFloat(costInput.value);
+    const quantity = parseInt(document.getElementById('quantity').value);
 
-		let inAmount = 0;
-		let outAmount = 0;
-		let currentBalance = inventoryData[currentProduct] && inventoryData[currentProduct].length > 0 ?
-			inventoryData[currentProduct][inventoryData[currentProduct].length - 1].balance : 0;
+    let inAmount = 0;
+    let outAmount = 0;
+    let currentBalance = inventoryData[currentProduct] && inventoryData[currentProduct].length > 0 ?
+        inventoryData[currentProduct][inventoryData[currentProduct].length - 1].balance : 0;
 
-		if (description === 'Purchase of Inventory') {
-			inAmount = cost * quantity;
-			currentBalance += inAmount;
-		} else if (description === 'Sale of Merchandise') {
-			outAmount = cost * quantity;
-			currentBalance -= outAmount;
-		}
+    if (description === 'Purchase of Inventory') {
+        inAmount = cost * quantity;
+        currentBalance += inAmount;
+    } else if (description === 'Sale of Merchandise') {
+        outAmount = cost * quantity;
+        currentBalance -= outAmount;
+    }
 
-		const entry = {
-			productName: currentProduct,
-			entryDate: date,
-			description: description,
-			cost: cost,
-			quantity: quantity,
-			inAmount: inAmount,
-			outAmount: outAmount,
-			balance: currentBalance,
-			remarks: '' // Add any remarks if needed
-		};
+    const entry = {
+        productName: currentProduct,
+        entryDate: date,
+        description: description,
+        cost: cost,
+        quantity: quantity,
+        inAmount: inAmount,
+        outAmount: outAmount,
+        balance: currentBalance,
+        remarks: '' // Add any remarks if needed
+    };
 
-		if (!inventoryData[currentProduct]) {
-			inventoryData[currentProduct] = [];
-		}
-		inventoryData[currentProduct].push(entry);
+    if (!inventoryData[currentProduct]) {
+        inventoryData[currentProduct] = [];
+    }
+    inventoryData[currentProduct].push(entry);
 
-		// Save entry to server
-		fetch('/inventory/add', {
-			method: 'POST',
-			headers: {
-				'Content-Type': 'application/json'
-			},
-			body: JSON.stringify(entry)
-		})
-		.then(response => {
-			if (!response.ok) {
-				throw new Error('Network response was not ok');
-			}
-			return response.json();
-		})
-		.then(() => {
-			console.log('Entry saved, updating tables...');
-			updateTables();
-		})
-		.catch(error => console.error('Error saving entry:', error));
+    // Save entry to server
+    fetch('/inventory/add', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(entry)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error('Network response was not ok');
+        }
+        return response.json();
+    })
+    .then(() => {
+        console.log('Entry saved, updating tables...');
+        // Fetch and update latest balance
+        fetchLatestBalance(currentProduct).then(latestBalance => {
+            if (latestBalance <= 0 || latestBalance === undefined) {
+                currentBalanceInput.value = 'Out of Stock!';
+            } else {
+                currentBalanceInput.value = latestBalance.toFixed(2); // Display the balance
+            }
+            // Update the tables
+            updateTables();
+        });
+    })
+    .catch(error => console.error('Error saving entry:', error));
 	});
+
 
 	// Handle update Tables ajax
 	function updateTables() {

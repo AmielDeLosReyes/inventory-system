@@ -13,6 +13,6 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
     List<Inventory> findByProductName(String productName);
 
     Inventory findTopByProductNameOrderByEntryDateDescIdDesc(String productName);
-    @Query("SELECT i FROM Inventory i WHERE i.productName = :productName ORDER BY i.entryDate DESC, i.id DESC")
-    Inventory findLatestEntry(@Param("productName") String productName);
+    @Query(value = "SELECT * FROM inventory WHERE product_name = :productName ORDER BY entry_date DESC, id DESC LIMIT 1", nativeQuery = true)
+    Inventory findLatestEntryByProductName(@Param("productName") String productName);
 }
