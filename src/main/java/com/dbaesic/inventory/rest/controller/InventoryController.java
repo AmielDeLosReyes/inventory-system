@@ -88,12 +88,6 @@ public class InventoryController {
         // Save inventory entry and update balance
         log.info("Saving entry to database...");
         inventoryService.saveEntry(inventory); // Save the new entry first
-//        inventoryService.updateBalance(
-//                inventory.getProductName(),
-//                inventory.getInAmount() != null ? inventory.getInAmount() : BigDecimal.ZERO,
-//                inventory.getOutAmount() != null ? inventory.getOutAmount() : BigDecimal.ZERO,
-//                "Purchase of Inventory".equals(inventory.getDescription())
-//        );
 
         // Return JSON response
         return ResponseEntity.ok().body("{\"message\":\"Entry saved successfully\"}");

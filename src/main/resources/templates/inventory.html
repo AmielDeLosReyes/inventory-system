@@ -193,71 +193,74 @@
 
 	// Handle inventory form submission
 	document.getElementById('inventoryForm').addEventListener('submit', function(event) {
-    event.preventDefault();
+	    event.preventDefault();
 
-    const date = document.getElementById('entryDate').value;
-    const description = document.getElementById('description').value;
-    const cost = parseFloat(costInput.value);
-    const quantity = parseInt(document.getElementById('quantity').value);
+	    const date = document.getElementById('entryDate').value;
+	    const description = document.getElementById('description').value;
+	    const cost = parseFloat(costInput.value);
+	    const quantity = parseInt(document.getElementById('quantity').value);
 
-    let inAmount = 0;
-    let outAmount = 0;
-    let currentBalance = inventoryData[currentProduct] && inventoryData[currentProduct].length > 0 ?
-        inventoryData[currentProduct][inventoryData[currentProduct].length - 1].balance : 0;
+	    let inAmount = 0;
+	    let outAmount = 0;
+	    let currentBalance = 0;
 
-    if (description === 'Purchase of Inventory') {
-        inAmount = cost * quantity;
-        currentBalance += inAmount;
-    } else if (description === 'Sale of Merchandise') {
-        outAmount = cost * quantity;
-        currentBalance -= outAmount;
-    }
+	    fetchLatestBalance(currentProduct).then(latestBalance => {
+	        currentBalance = latestBalance;
 
-    const entry = {
-        productName: currentProduct,
-        entryDate: date,
-        description: description,
-        cost: cost,
-        quantity: quantity,
-        inAmount: inAmount,
-        outAmount: outAmount,
-        balance: currentBalance,
-        remarks: '' // Add any remarks if needed
-    };
+	        if (description === 'Purchase of Inventory') {
+	            inAmount = cost * quantity;
+	            currentBalance += inAmount;
+	        } else if (description === 'Sale of Merchandise') {
+	            outAmount = cost * quantity;
+	            currentBalance -= outAmount;
+	        }
 
-    if (!inventoryData[currentProduct]) {
-        inventoryData[currentProduct] = [];
-    }
-    inventoryData[currentProduct].push(entry);
+	        const entry = {
+	            productName: currentProduct,
+	            entryDate: date,
+	            description: description,
+	            cost: cost,
+	            quantity: quantity,
+	            inAmount: inAmount,
+	            outAmount: outAmount,
+	            balance: currentBalance,
+	            remarks: '' // Add any remarks if needed
+	        };
 
-    // Save entry to server
-    fetch('/inventory/add', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(entry)
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.json();
-    })
-    .then(() => {
-        console.log('Entry saved, updating tables...');
-        // Fetch and update latest balance
-        fetchLatestBalance(currentProduct).then(latestBalance => {
-            if (latestBalance <= 0 || latestBalance === undefined) {
-                currentBalanceInput.value = 'Out of Stock!';
-            } else {
-                currentBalanceInput.value = latestBalance.toFixed(2); // Display the balance
-            }
-            // Update the tables
-            updateTables();
-        });
-    })
-    .catch(error => console.error('Error saving entry:', error));
+	        if (!inventoryData[currentProduct]) {
+	            inventoryData[currentProduct] = [];
+	        }
+	        inventoryData[currentProduct].push(entry);
+
+	        // Save entry to server
+	        fetch('/inventory/add', {
+	            method: 'POST',
+	            headers: {
+	                'Content-Type': 'application/json'
+	            },
+	            body: JSON.stringify(entry)
+	        })
+	        .then(response => {
+	            if (!response.ok) {
+	                throw new Error('Network response was not ok');
+	            }
+	            return response.json();
+	        })
+	        .then(() => {
+	            console.log('Entry saved, updating tables...');
+	            // Fetch and update latest balance
+	            fetchLatestBalance(currentProduct).then(latestBalance => {
+	                if (latestBalance <= 0 || latestBalance === undefined) {
+	                    currentBalanceInput.value = 'Out of Stock!';
+	                } else {
+	                    currentBalanceInput.value = latestBalance.toFixed(2); // Display the balance
+	                }
+	                // Update the tables
+	                updateTables();
+	            });
+	        })
+	        .catch(error => console.error('Error saving entry:', error));
+	    });
 	});
 
 
@@ -267,6 +270,10 @@
 
 	    Object.keys(inventoryData).forEach(product => {
 	        const entries = inventoryData[product];
+
+	        // Sort entries by date in ascending order
+	        entries.sort((a, b) => new Date(a.entryDate) - new Date(b.entryDate));
+
 	        let tableHTML = `
 	            <div class="card mb-4">
 	                <div class="card-header">
@@ -277,7 +284,7 @@
 
 	        if (entries.length === 0 || entries[entries.length - 1].balance <= 0) {
 	            tableHTML += `
-	                <p class="text-danger">Out of Stock!</p>
+	                <p class="text-danger">Out of Stock! You've sold everything. Please restock.</p>
 	            `;
 	        } else {
 	            tableHTML += `
@@ -330,28 +337,11 @@
 	}
 
 
+
 	// Handle export to Excel
 	exportButton.addEventListener('click', function() {
-		const wb = XLSX.utils.book_new();
-		Object.keys(inventoryData).forEach(product => {
-			const wsData = inventoryData[product].map(entry => [
-				entry.entryDate,
-				entry.description,
-				entry.cost.toFixed(2),
-				entry.quantity,
-				entry.inAmount.toFixed(2),
-				entry.outAmount.toFixed(2),
-				entry.balance.toFixed(2),
-				entry.remarks
-			]);
-			const ws = XLSX.utils.aoa_to_sheet([
-				['Date', 'Description', 'Cost', 'Quantity', 'In Amount', 'Out Amount', 'Balance', 'Remarks'],
-				...wsData
-			]);
-			XLSX.utils.book_append_sheet(wb, ws, product);
-		});
-		XLSX.writeFile(wb, 'InventoryData.xlsx');
-	});
+    window.location.href = '/document/export';
+});
 </script>
 </body>
 </html>

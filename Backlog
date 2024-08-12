@@ -1,5 +1,16 @@
 Features:
-- When balance of a product is 0, put in remarks column "Reorder!!".
+- When balance of a product is 0, put in remarks column "Reorder!!". (DONE)
 - Save entries to database.
 - Add Sales Summary Sheet on the export excel.
+	- Daily summary of quantity sold / amount per item 
+	- Monthly summary of quantity sold / amount per item 
+	- Daily and Monthly for Cost as well
+	- Optional: add dashboard
+	- Total Inventory Cost.
 - Integrate Shopee API
+- Add status (In Stock, Low Stock, Out of Stock)
+- If we refresh, the table will be gone and the export to excel will be gone. We need a backend code for the data exporting where we fetch from the database instead.
+- Remove entry when mistake
+- On per product table, make Dates chronological.(DONE)
+- Need to work on when refreshed, we can still do the same data as persisted.
+- Bug in Current Balance...

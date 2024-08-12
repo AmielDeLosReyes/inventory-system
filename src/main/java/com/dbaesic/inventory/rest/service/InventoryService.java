@@ -58,9 +58,18 @@ public class InventoryService {
 
 
     public BigDecimal getLatestBalance(String productName) {
-        log.info("=== Fetching Latest Balance for {}", productName);
-        Inventory latestEntry = inventoryRepository.findLatestEntryByProductName(productName);
-        return (latestEntry != null) ? latestEntry.getBalance() : BigDecimal.ZERO;
+        List<Inventory> entries = inventoryRepository.findByProductName(productName);
+
+        // Calculate the balance by iterating through entries
+        BigDecimal balance = BigDecimal.ZERO;
+        for (Inventory entry : entries) {
+            if ("Purchase of Inventory".equals(entry.getDescription())) {
+                balance = balance.add(entry.getInAmount());
+            } else if ("Sale of Merchandise".equals(entry.getDescription())) {
+                balance = balance.subtract(entry.getOutAmount());
+            }
+        }
+        return balance;
     }
 
 

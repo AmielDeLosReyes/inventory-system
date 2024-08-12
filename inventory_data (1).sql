@@ -51,6 +51,45 @@ WHERE product_name = 'Georgina'
 ORDER BY entry_date DESC, id DESC
 LIMIT 1;
 
-truncate table inventory;
+-- truncate table inventory;
+
+-- Script to get daily quantities and out_amounts
+SELECT
+    entry_date,
+    product_name,
+    description,
+    SUM(quantity) AS total_quantity_day,
+    SUM(out_amount) AS total_out_amount_day
+FROM
+    inventory
+WHERE
+    product_name = 'Georgina'
+    AND description = 'Sale of Merchandise'
+GROUP BY
+    entry_date, product_name, description
+ORDER BY
+    entry_date;
+
+
+-- Script to get monthly totals for out_amounts and quantities
+SELECT
+    YEAR(entry_date) AS year,
+    MONTH(entry_date) AS month,
+    product_name,
+    description,
+    SUM(quantity) AS total_quantity_month,
+    SUM(out_amount) AS total_out_amount_month
+FROM
+    inventory
+WHERE
+    product_name = 'Georgina'
+    AND description = 'Sale of Merchandise'
+GROUP BY
+    YEAR(entry_date), MONTH(entry_date), product_name, description
+ORDER BY
+    year, month;
+
+
+
 
 
