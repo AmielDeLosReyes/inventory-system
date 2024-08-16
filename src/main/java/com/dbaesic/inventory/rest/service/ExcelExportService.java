@@ -5,9 +5,8 @@ import com.dbaesic.inventory.rest.repository.InventoryRepository;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.ss.util.CellRangeAddress;
-import org.apache.poi.xssf.usermodel.IndexedColorMap;
-import org.apache.poi.xssf.usermodel.XSSFColor;
-import org.apache.poi.xssf.usermodel.XSSFWorkbook;
+import org.apache.poi.xddf.usermodel.chart.*;
+import org.apache.poi.xssf.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -29,7 +28,7 @@ public class ExcelExportService {
     private InventoryRepository inventoryRepository;
 
     public ByteArrayInputStream exportCombinedExcel() throws IOException {
-        Workbook workbook = new XSSFWorkbook();
+        XSSFWorkbook workbook = new XSSFWorkbook();
         createInventorySheet(workbook);
         createSalesSummarySheet(workbook);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
@@ -37,14 +36,14 @@ public class ExcelExportService {
         return new ByteArrayInputStream(out.toByteArray());
     }
 
-    private void createInventorySheet(Workbook workbook) {
+    private void createInventorySheet(XSSFWorkbook workbook) {
         List<String> productNames = inventoryRepository.findAllUniqueProductNames();
 
         for (String productName : productNames) {
             List<Inventory> inventories = inventoryRepository.findByProductName(productName);
 
             // Create Inventory sheet
-            Sheet inventorySheet = workbook.createSheet(productName + " Inventory");
+            XSSFSheet inventorySheet = workbook.createSheet(productName + " Inventory");
             Row headerRow = inventorySheet.createRow(0);
             headerRow.createCell(0).setCellValue("Date");
             headerRow.createCell(1).setCellValue("Description");
@@ -77,14 +76,39 @@ public class ExcelExportService {
             for (int i = 0; i < 8; i++) {
                 inventorySheet.autoSizeColumn(i);
             }
+
+            // Create a bar chart for this product
+            XSSFDrawing drawing = inventorySheet.createDrawingPatriarch();
+            XSSFClientAnchor anchor = new XSSFClientAnchor();
+            anchor.setCol1(0);
+            anchor.setRow1(rowNum + 2);
+            anchor.setCol2(10);
+            anchor.setRow2(rowNum + 20);
+
+            XSSFChart chart = drawing.createChart(anchor);
+            XDDFCategoryAxis categoryAxis = chart.createCategoryAxis(AxisPosition.BOTTOM);
+            XDDFValueAxis valueAxis = chart.createValueAxis(AxisPosition.LEFT);
+            XDDFDataSource categories = XDDFDataSourcesFactory.fromStringCellRange(inventorySheet, new CellRangeAddress(1, rowNum - 1, 0, 0));
+            XDDFNumericalDataSource values = XDDFDataSourcesFactory.fromNumericCellRange(inventorySheet, new CellRangeAddress(1, rowNum - 1, 3, 3));
+
+            XDDFChartData data = chart.createData(ChartTypes.BAR, categoryAxis, valueAxis);
+            XDDFChartData.Series series = data.addSeries(categories, values);
+            series.setTitle("Sales Data", null);
+
+            // Set chart title and axes labels
+            chart.setTitleText("Sales Data for " + productName);
+            chart.setTitleOverlay(false);
+            chart.getOrAddLegend().setPosition(LegendPosition.BOTTOM);
+
+            chart.plot(data);
         }
     }
 
-    private void createSalesSummarySheet(Workbook workbook) {
+    private void createSalesSummarySheet(XSSFWorkbook workbook) {
         List<Inventory> allInventories = inventoryRepository.findAll();
 
         // Create Sales Summary sheet
-        Sheet salesSummarySheet = workbook.createSheet("Sales Summary");
+        XSSFSheet salesSummarySheet = workbook.createSheet("Sales Summary");
 
         // Create and style the header row for the "Sales Summary" title
         Row titleRow = salesSummarySheet.createRow(0);
@@ -108,7 +132,7 @@ public class ExcelExportService {
         titleCell.setCellStyle(titleStyle);
 
         // Merge cells for the title
-        salesSummarySheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 4));
+        salesSummarySheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 5)); // Adjusted range for new column
 
         // Create header row for the columns
         Row headerRow = salesSummarySheet.createRow(1);
@@ -117,6 +141,7 @@ public class ExcelExportService {
         headerRow.createCell(2).setCellValue("Description");
         headerRow.createCell(3).setCellValue("Total Out Amount");
         headerRow.createCell(4).setCellValue("Total Quantity");
+        headerRow.createCell(5).setCellValue("Total Summary"); // New header for summary
 
         // Style for the header row
         CellStyle headerStyle = workbook.createCellStyle();
@@ -144,6 +169,9 @@ public class ExcelExportService {
         int rowNum = 2; // Start from row 2 to leave space for title and headers
         for (Map.Entry<String, Map<String, SalesData>> productEntry : salesDataMap.entrySet()) {
             String productName = productEntry.getKey();
+            BigDecimal productTotalOutAmount = BigDecimal.ZERO;
+            int productTotalQuantity = 0;
+
             for (Map.Entry<String, SalesData> dateEntry : productEntry.getValue().entrySet()) {
                 SalesData salesData = dateEntry.getValue();
                 Row row = salesSummarySheet.createRow(rowNum++);
@@ -152,29 +180,41 @@ public class ExcelExportService {
                 row.createCell(2).setCellValue("Sale of Merchandise"); // Description
                 row.createCell(3).setCellValue("₱ " + salesData.getTotalOutAmount().toString()); // Total Out Amount
                 row.createCell(4).setCellValue(salesData.getTotalQuantity()); // Total Quantity
+
+                // Accumulate totals
+                productTotalOutAmount = productTotalOutAmount.add(salesData.getTotalOutAmount());
+                productTotalQuantity += salesData.getTotalQuantity();
             }
+
+            // Add total summary row for the product
+            Row summaryRow = salesSummarySheet.createRow(rowNum++);
+            summaryRow.createCell(0).setCellValue("Total for " + productName); // Label
+            summaryRow.createCell(1).setCellValue(""); // Empty cell
+            summaryRow.createCell(2).setCellValue(""); // Empty cell
+            summaryRow.createCell(3).setCellValue("₱ " + productTotalOutAmount.toString()); // Total Out Amount
+            summaryRow.createCell(4).setCellValue(productTotalQuantity); // Total Quantity
+            summaryRow.createCell(5).setCellValue("₱ " + productTotalOutAmount.toString()); // Summary
+
+            rowNum += 2;
         }
 
-        // Auto size columns
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < 6; i++) {
             salesSummarySheet.autoSizeColumn(i);
         }
     }
 
-
     private Map<String, Map<String, SalesData>> aggregateSalesData(List<Inventory> inventories) {
-        // Aggregates sales data by product name and entry date
         return inventories.stream()
-                .filter(inv -> "Sale of Merchandise".equals(inv.getDescription()))
                 .collect(Collectors.groupingBy(
                         Inventory::getProductName,
                         Collectors.groupingBy(
-                                inv -> LocalDate.parse(inv.getEntryDate()).toString(),
+                                Inventory::getEntryDate,
                                 Collectors.collectingAndThen(
                                         Collectors.toList(),
                                         list -> {
                                             BigDecimal totalOutAmount = list.stream()
-                                                    .map(inv -> inv.getOutAmount() != null ? inv.getOutAmount() : BigDecimal.ZERO)
+                                                    .map(Inventory::getOutAmount)
+                                                    .filter(amount -> amount != null)
                                                     .reduce(BigDecimal.ZERO, BigDecimal::add);
                                             int totalQuantity = list.stream()
                                                     .mapToInt(Inventory::getQuantity)
@@ -204,4 +244,3 @@ public class ExcelExportService {
         }
     }
 }
-

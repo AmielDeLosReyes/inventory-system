@@ -2,6 +2,13 @@ CREATE DATABASE inventory_management;
 
 USE inventory_management;
 
+ALTER TABLE inventory 
+MODIFY COLUMN cost VARCHAR(255) NOT NULL,
+MODIFY COLUMN in_amount VARCHAR(255),
+MODIFY COLUMN out_amount VARCHAR(255),
+MODIFY COLUMN balance VARCHAR(255);
+
+
 CREATE TABLE inventory (
     id INT AUTO_INCREMENT PRIMARY KEY,
     product_name VARCHAR(255) NOT NULL,
@@ -16,6 +23,7 @@ CREATE TABLE inventory (
 );
 
 select * from inventory;
+select * from products;
 
 CREATE TABLE products (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -52,6 +60,7 @@ ORDER BY entry_date DESC, id DESC
 LIMIT 1;
 
 -- truncate table inventory;
+SHOW COLUMNS FROM inventory;
 
 -- Script to get daily quantities and out_amounts
 SELECT

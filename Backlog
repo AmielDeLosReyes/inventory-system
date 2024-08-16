@@ -8,7 +8,7 @@ Features:
 	- Optional: add dashboard
 	- Total Inventory Cost.
 - Integrate Shopee API
-- Add status (In Stock, Low Stock, Out of Stock)
+- Add status (In Stock, Low Stock, Out of Stock) (CRITICAL TO KNOW THE STOCKS)
 - If we refresh, the table will be gone and the export to excel will be gone. We need a backend code for the data exporting where we fetch from the database instead.
 - Remove entry when mistake
 - On per product table, make Dates chronological.(DONE)
