@@ -19,4 +19,12 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     @Query("SELECT i FROM Inventory i WHERE i.outAmount > 0")
     List<Inventory> findAllSales();
+
+    // InventoryRepository.java
+    @Query("SELECT i FROM Inventory i WHERE i.productName = :productName AND FUNCTION('DATE_FORMAT', i.entryDate, '%Y-%m') = :month")
+    List<Inventory> findByProductNameAndMonth(@Param("productName") String productName, @Param("month") String month);
+
+    @Query("SELECT DISTINCT FUNCTION('DATE_FORMAT', i.entryDate, '%Y-%m') FROM Inventory i")
+    List<String> findDistinctMonths();
+
 }

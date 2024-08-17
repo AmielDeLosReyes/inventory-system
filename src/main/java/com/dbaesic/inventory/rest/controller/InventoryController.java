@@ -6,6 +6,7 @@ import com.dbaesic.inventory.rest.service.InventoryService;
 import com.dbaesic.inventory.rest.service.ProductService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -101,6 +102,38 @@ public class InventoryController {
         response.put("latestBalance", latestBalance);
         return ResponseEntity.ok(response);
     }
+
+    @DeleteMapping("/delete/{id}")
+    public ResponseEntity<Void> deleteEntry(@PathVariable("id") Long id) {
+        // Log the ID we are trying to delete
+        log.info("Attempting to delete entry with ID: {}", id);
+
+        try {
+            inventoryService.deleteEntryById(id);
+            return ResponseEntity.noContent().build();
+        } catch (Exception e) {
+            log.error("Error deleting entry with ID {}: {}", id, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    // InventoryController.java
+    @GetMapping("/entries")
+    public ResponseEntity<List<Inventory>> getEntriesByProductAndMonth(
+            @RequestParam String productName,
+            @RequestParam String month) {
+        List<Inventory> entries = inventoryService.getEntriesByProductAndMonth(productName, month);
+        return ResponseEntity.ok(entries);
+    }
+
+    @GetMapping("/months")
+    public ResponseEntity<List<String>> getAvailableMonths() {
+        List<String> months = inventoryService.getAvailableMonths();
+        return ResponseEntity.ok(months);
+    }
+
+
+
 }
 
 

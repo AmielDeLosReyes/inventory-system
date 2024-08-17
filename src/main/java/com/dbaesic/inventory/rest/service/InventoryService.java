@@ -2,6 +2,7 @@ package com.dbaesic.inventory.rest.service;
 
 import com.dbaesic.inventory.rest.model.Inventory;
 import com.dbaesic.inventory.rest.repository.InventoryRepository;
+import jakarta.transaction.Transactional;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -88,6 +89,23 @@ public class InventoryService {
         return inventoryRepository.findAllSales();
     }
 
+    @Transactional
+    public void deleteEntryById(Long id) throws Exception {
+        // Check if the entry exists
+        if (!inventoryRepository.existsById(id)) {
+            throw new Exception("Entry with ID " + id + " not found");
+        }
+        // Delete the entry
+        inventoryRepository.deleteById(id);
+    }
+
+    public List<Inventory> getEntriesByProductAndMonth(String productName, String month) {
+        return inventoryRepository.findByProductNameAndMonth(productName, month);
+    }
+
+    public List<String> getAvailableMonths() {
+        return inventoryRepository.findDistinctMonths();
+    }
 
 }
 
