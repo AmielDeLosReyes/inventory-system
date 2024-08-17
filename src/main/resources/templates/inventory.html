@@ -43,6 +43,24 @@
 		    background-color: #334D23; /* Slightly darker shade on hover */
 		    border-color: #334D23; /* Match the border color on hover */
 		}
+		.btn-custom {
+		    background-color: rgb(170, 130, 115); /* Lighter RGB color */
+		    border: none;
+		    color: white; /* White text color */
+		    padding: 10px 20px;
+		    text-align: center;
+		    text-decoration: none;
+		    display: inline-block;
+		    font-size: 16px;
+		    margin: 4px 2px;
+		    cursor: pointer;
+		    border-radius: 5px; /* Optional: for rounded corners */
+		}
+
+		.btn-custom:hover {
+		    background-color: rgb(150, 110, 95); /* Slightly darker color on hover for better user experience */
+		}
+
 
 	</style>
 </head>
@@ -102,7 +120,7 @@
 					<label for="currentBalance">Current Balance</label>
 					<input type="text" class="form-control" id="currentBalance" name="currentBalance" readonly>
 				</div>
-				<button type="submit" class="btn btn-primary">Add Entry</button>
+				<button type="submit" class="btn-custom">Add Entry</button>
 			</form>
 		</div>
 	</div>

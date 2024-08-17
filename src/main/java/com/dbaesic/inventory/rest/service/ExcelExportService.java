@@ -44,16 +44,29 @@ public class ExcelExportService {
 
             // Create Inventory sheet
             XSSFSheet inventorySheet = workbook.createSheet(productName + " Inventory");
+
+            // Define header cell style
+            XSSFColor titleColor = new XSSFColor(new byte[] {86, 61, 45}); // RGB: (86, 61, 45)
+            CellStyle headerStyle = workbook.createCellStyle();
+            headerStyle.setFillForegroundColor(titleColor);
+            headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            // Define header font style
+            XSSFFont headerFont = workbook.createFont();
+            headerFont.setColor(IndexedColors.WHITE.getIndex()); // Set font color to white
+            headerFont.setBold(true); // Make font bold if needed
+            headerStyle.setFont(headerFont);
+
+            // Create header row and apply styles
             Row headerRow = inventorySheet.createRow(0);
-            headerRow.createCell(0).setCellValue("Date");
-            headerRow.createCell(1).setCellValue("Description");
-            headerRow.createCell(2).setCellValue("Cost");
-            headerRow.createCell(3).setCellValue("Quantity");
-            headerRow.createCell(4).setCellValue("In Amount");
-            headerRow.createCell(5).setCellValue("Out Amount");
-            headerRow.createCell(6).setCellValue("Balance");
-            headerRow.createCell(7).setCellValue("Remarks");
-            // Removed the "Status" column
+            createStyledHeaderCell(headerRow, 0, "Date", headerStyle);
+            createStyledHeaderCell(headerRow, 1, "Description", headerStyle);
+            createStyledHeaderCell(headerRow, 2, "Cost", headerStyle);
+            createStyledHeaderCell(headerRow, 3, "Quantity", headerStyle);
+            createStyledHeaderCell(headerRow, 4, "In Amount", headerStyle);
+            createStyledHeaderCell(headerRow, 5, "Out Amount", headerStyle);
+            createStyledHeaderCell(headerRow, 6, "Balance", headerStyle);
+            createStyledHeaderCell(headerRow, 7, "Remarks", headerStyle);
 
             int rowNum = 1;
 
@@ -121,6 +134,12 @@ public class ExcelExportService {
                 inventorySheet.autoSizeColumn(i);
             }
         }
+    }
+
+    private void createStyledHeaderCell(Row row, int columnIndex, String value, CellStyle style) {
+        Cell cell = row.createCell(columnIndex);
+        cell.setCellValue(value);
+        cell.setCellStyle(style);
     }
 
     private String getStockStatus(BigDecimal balance) {
