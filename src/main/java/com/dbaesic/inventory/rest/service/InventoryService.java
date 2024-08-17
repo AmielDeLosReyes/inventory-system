@@ -25,36 +25,48 @@ public class InventoryService {
     }
 
     public void updateBalance(String productName, BigDecimal inAmount, BigDecimal outAmount, boolean isIn) {
-        // Retrieve the most recent entry for the given product
-        Inventory latestEntry = inventoryRepository.findTopByProductNameOrderByEntryDateDescIdDesc(productName);
+        // Retrieve all entries for the given product
+        List<Inventory> entries = inventoryRepository.findByProductNameOrderByEntryDateAsc(productName);
 
-        // Determine the current balance
-        BigDecimal currentBalance = (latestEntry != null) ? latestEntry.getBalance() : BigDecimal.ZERO;
+        BigDecimal newBalance = BigDecimal.ZERO;
 
-        // Calculate the new balance
-        BigDecimal newBalance = currentBalance;
+        // Iterate through the entries to calculate the balance
+        for (Inventory entry : entries) {
+            // Calculate the balance considering each entry
+            if ("Purchase of Inventory".equals(entry.getDescription())) {
+                newBalance = newBalance.add(entry.getInAmount());
+            } else if ("Sale of Merchandise".equals(entry.getDescription())) {
+                newBalance = newBalance.subtract(entry.getOutAmount());
+            }
+
+            // Update each entry's balance
+            entry.setBalance(newBalance);
+            inventoryRepository.save(entry);
+        }
+
+        // Add the new entry to the list and calculate its balance
+        Inventory newEntry = new Inventory();
+        newEntry.setProductName(productName);
+        newEntry.setEntryDate(String.valueOf(new java.sql.Date(System.currentTimeMillis()))); // Set current date
+        newEntry.setDescription(isIn ? "Purchase of Inventory" : "Sale of Merchandise");
+        newEntry.setCost(BigDecimal.ZERO); // Set an appropriate cost if needed
+        newEntry.setQuantity(0); // Set the appropriate quantity if needed
+        newEntry.setInAmount(isIn ? inAmount : BigDecimal.ZERO);
+        newEntry.setOutAmount(isIn ? BigDecimal.ZERO : outAmount);
+
+        // Calculate balance after adding the new entry
         if (isIn) {
             newBalance = newBalance.add(inAmount);
         } else {
             newBalance = newBalance.subtract(outAmount);
         }
 
-        // Check if we need to create a new entry
-        if (latestEntry == null || !newBalance.equals(latestEntry.getBalance())) {
-            Inventory newEntry = new Inventory();
-            newEntry.setProductName(productName);
-            newEntry.setEntryDate(String.valueOf(new java.sql.Date(System.currentTimeMillis()))); // Set current date
-            newEntry.setDescription(isIn ? "Purchase of Inventory" : "Sale of Merchandise");
-            newEntry.setCost(BigDecimal.ZERO); // Set an appropriate cost if needed
-            newEntry.setQuantity(0); // Set the appropriate quantity if needed
-            newEntry.setInAmount(isIn ? inAmount : BigDecimal.ZERO);
-            newEntry.setOutAmount(isIn ? BigDecimal.ZERO : outAmount);
-            newEntry.setBalance(newBalance);
+        newEntry.setBalance(newBalance);
 
-            // Save the new entry
-            inventoryRepository.save(newEntry);
-        }
+        // Save the new entry
+        inventoryRepository.save(newEntry);
     }
+
 
 
     public BigDecimal getLatestBalance(String productName) {

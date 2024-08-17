@@ -35,4 +35,6 @@ public interface InventoryRepository extends JpaRepository<Inventory, Long> {
 
     @Query("SELECT DISTINCT i.productName FROM Inventory i")
     List<String> findAllUniqueProductNames();
+
+    List<Inventory> findByProductNameOrderByEntryDateAsc(String productName);
 }
