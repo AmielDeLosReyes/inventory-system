@@ -239,7 +239,7 @@ public class ExcelExportService {
         headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
         headerRow.forEach(cell -> cell.setCellStyle(headerStyle));
 
-        // Aggregate sales data
+        // Filter and aggregate sales data
         Map<String, Map<String, SalesData>> salesDataMap = aggregateSalesData(allInventories);
 
         int rowNum = 2; // Start from row 2 to leave space for title and headers
@@ -298,7 +298,6 @@ public class ExcelExportService {
 
             // Add an extra blank row below the summary row for spacing
             rowNum += 2;
-
         }
 
         for (int i = 0; i < 6; i++) {
@@ -308,16 +307,16 @@ public class ExcelExportService {
 
     private Map<String, Map<String, SalesData>> aggregateSalesData(List<Inventory> inventories) {
         return inventories.stream()
+                .filter(inventory -> inventory.getOutAmount() != null && inventory.getOutAmount().compareTo(BigDecimal.ZERO) > 0)
                 .collect(Collectors.groupingBy(
                         Inventory::getProductName,
                         Collectors.groupingBy(
-                                Inventory::getEntryDate,
+                                inventory -> inventory.getEntryDate().toString(),
                                 Collectors.collectingAndThen(
                                         Collectors.toList(),
                                         list -> {
                                             BigDecimal totalOutAmount = list.stream()
                                                     .map(Inventory::getOutAmount)
-                                                    .filter(amount -> amount != null)
                                                     .reduce(BigDecimal.ZERO, BigDecimal::add);
                                             int totalQuantity = list.stream()
                                                     .mapToInt(Inventory::getQuantity)

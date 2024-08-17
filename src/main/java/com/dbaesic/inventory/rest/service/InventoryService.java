@@ -84,6 +84,10 @@ public class InventoryService {
         return balance;
     }
 
+    public List<Inventory> getAllSales() {
+        return inventoryRepository.findAllSales();
+    }
+
 
 }
 
