@@ -374,12 +374,15 @@
 	                        <th>Out Amount</th>
 	                        <th>Balance</th>
 	                        <th>Remarks</th>
+	                        <th>Action</th> <!-- Add an Action column for the Remove button -->
 	                    </tr>
 	                `;
 	                table.appendChild(thead);
 
 	                const tbody = document.createElement('tbody');
 	                groupedEntries[date].forEach(entry => {
+	                    console.log('Entry ID:', entry.id); // Log the entry ID
+
 	                    const tr = document.createElement('tr');
 	                    tr.innerHTML = `
 	                        <td>${entry.id}</td>
@@ -391,8 +394,8 @@
 	                        <td>${entry.inAmount}</td>
 	                        <td>${entry.outAmount}</td>
 	                        <td>${entry.balance}</td>
-                            <td>${entry.remarks || ''}</td> <!-- Default to empty string if remarks is null -->
-
+	                        <td>${entry.remarks || ''}</td> <!-- Default to empty string if remarks is null -->
+	                        <td><button class="btn btn-danger" onclick="deleteEntry(${entry.id})">Remove</button></td> <!-- Add Remove button -->
 	                    `;
 	                    tbody.appendChild(tr);
 	                });
@@ -403,21 +406,44 @@
 	        .catch(error => console.error('Error fetching inventory entries:', error));
 	}
 
-
-
 	// delete entry for delete button
 	function deleteEntry(entryId) {
-		if (confirm('Are you sure you want to delete this entry?')) {
-			fetch(`/inventory/delete/${entryId}`, {
-				method: 'DELETE',
-			})
-			.then(response => response.json())
-			.then(() => {
-				updateTables();
-			})
-			.catch(error => console.error('Error deleting entry:', error));
-		}
+	    if (confirm('Are you sure you want to delete this entry?')) {
+	        fetch(`/inventory/delete/${entryId}`, {
+	            method: 'DELETE',
+	        })
+	        .then(response => {
+	            if (response.ok) {
+	                if (response.status === 204) {
+	                    // No content response, just resolve the promise
+	                    return Promise.resolve();
+	                }
+	                // Handle other successful responses if necessary
+	                return response.json();
+	            } else {
+	                // Handle HTTP errors
+	                return response.text().then(text => {
+	                    try {
+	                        const error = JSON.parse(text);
+	                        return Promise.reject(error);
+	                    } catch (e) {
+	                        return Promise.reject({ message: text });
+	                    }
+	                });
+	            }
+	        })
+	        .then(() => {
+	            updateTables();
+	            alert('Entry deleted successfully!');
+	        })
+	        .catch(error => {
+	            console.error('Error deleting entry:', error);
+	            alert(`Failed to delete entry. ${error.message || 'Please try again.'}`);
+	        });
+	    }
 	}
+
+
 
 	// Handle export to Excel
 	exportButton.addEventListener('click', function() {
