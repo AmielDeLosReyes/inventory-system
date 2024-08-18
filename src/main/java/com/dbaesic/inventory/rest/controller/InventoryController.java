@@ -121,19 +121,22 @@ public class InventoryController {
     @GetMapping("/entries")
     public ResponseEntity<List<Inventory>> getEntriesByProductAndMonth(
             @RequestParam String productName,
-            @RequestParam String month) {
-        List<Inventory> entries = inventoryService.getEntriesByProductAndMonth(productName, month);
+            @RequestParam(required = false) String month) {
+        List<Inventory> entries;
+        if ("all".equals(month)) {
+            entries = inventoryService.getEntriesByProductName(productName);
+        } else {
+            entries = inventoryService.getEntriesByProductAndMonth(productName, month);
+        }
         return ResponseEntity.ok(entries);
     }
+
 
     @GetMapping("/months")
     public ResponseEntity<List<String>> getAvailableMonths() {
         List<String> months = inventoryService.getAvailableMonths();
         return ResponseEntity.ok(months);
     }
-
-
-
 }
 
 

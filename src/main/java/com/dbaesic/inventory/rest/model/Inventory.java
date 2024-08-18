@@ -41,6 +41,4 @@ public class Inventory {
 
     @Column(name = "remarks")
     private String remarks;
-
-    // Getters and setters
 }

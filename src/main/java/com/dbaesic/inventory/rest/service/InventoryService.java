@@ -103,10 +103,13 @@ public class InventoryService {
         return inventoryRepository.findByProductNameAndMonth(productName, month);
     }
 
+    public List<Inventory> getEntriesByProductName(String productName) {
+        return inventoryRepository.findByProductName(productName);
+    }
+
     public List<String> getAvailableMonths() {
         return inventoryRepository.findDistinctMonths();
     }
-
 }
 
 

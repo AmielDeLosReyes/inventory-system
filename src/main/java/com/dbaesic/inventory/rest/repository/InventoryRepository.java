@@ -1,6 +1,5 @@
 package com.dbaesic.inventory.rest.repository;
 
-
 import com.dbaesic.inventory.rest.model.Inventory;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +9,9 @@ import java.util.List;
 
 @Repository
 public interface InventoryRepository extends JpaRepository<Inventory, Long> {
+    @Query("SELECT i FROM Inventory i WHERE i.productName = :productName ORDER BY i.entryDate ASC")
     List<Inventory> findByProductName(String productName);
+
 
     @Query("SELECT DISTINCT i.productName FROM Inventory i")
     List<String> findAllUniqueProductNames();
