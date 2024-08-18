@@ -60,8 +60,9 @@
 		.btn-custom:hover {
 		    background-color: rgb(150, 110, 95); /* Slightly darker color on hover for better user experience */
 		}
-
-
+	    .text-danger {
+	        color: red;
+	    }
 	</style>
 </head>
 <body>
@@ -254,63 +255,90 @@
 
 	// Handle inventory form submission
 	document.getElementById('inventoryForm').addEventListener('submit', function(event) {
-		event.preventDefault();
-		const date = document.getElementById('entryDate').value;
-		const description = document.getElementById('description').value;
-		const cost = parseFloat(costInput.value);
-		const quantity = parseInt(document.getElementById('quantity').value);
+	    event.preventDefault();
+	    const date = document.getElementById('entryDate').value;
+	    const description = document.getElementById('description').value;
+	    const cost = parseFloat(costInput.value);
+	    const quantity = parseInt(document.getElementById('quantity').value);
 
-		let inAmount = 0;
-		let outAmount = 0;
-		let currentBalance = 0;
+	    let inAmount = 0;
+	    let outAmount = 0;
+	    let currentBalance = 0;
 
-		fetchLatestBalance(currentProduct).then(latestBalance => {
-			currentBalance = latestBalance;
+	    fetchLatestBalance(currentProduct).then(latestBalance => {
+	        currentBalance = latestBalance;
 
-			if (description === 'Purchase of Inventory') {
-				inAmount = cost * quantity;
-				currentBalance += inAmount;
-			} else if (description === 'Sale of Merchandise') {
-				outAmount = cost * quantity;
-				currentBalance -= outAmount;
-			}
+	        if (description === 'Purchase of Inventory') {
+	            inAmount = cost * quantity;
+	            currentBalance += inAmount;
+	        } else if (description === 'Sale of Merchandise') {
+	            outAmount = cost * quantity;
+	            // Check if the sale exceeds the current balance
+	            if (outAmount > currentBalance) {
+	                // Display error message if the sale exceeds the available stock
+	                const messageElement = document.createElement('div');
+	                messageElement.textContent = 'You can\'t sell more than the available stocks!';
+	                messageElement.className = 'text-danger'; // Add red text class
+	                inventoryFormCard.appendChild(messageElement);
 
-			const entry = {
-				productName: currentProduct,
-				entryDate: date,
-				description: description,
-				cost: cost,
-				quantity: quantity,
-				inAmount: inAmount,
-				outAmount: outAmount,
-				balance: currentBalance,
-				remarks: '' // Add any remarks if needed
-			};
+	                // Remove the message after 5 seconds
+	                setTimeout(() => {
+	                    messageElement.remove();
+	                }, 5000); // 5000 milliseconds = 5 seconds
 
-			if (!inventoryData[currentProduct]) {
-				inventoryData[currentProduct] = [];
-			}
-			inventoryData[currentProduct].push(entry);
+	                return; // Exit the function if the sale is not valid
+	            }
+	            currentBalance -= outAmount;
+	        }
 
-			// Save entry to server
-			fetch('/inventory/add', {
-				method: 'POST',
-				headers: {
-					'Content-Type': 'application/json'
-				},
-				body: JSON.stringify(entry)
-			})
-			.then(response => response.json())
-			.then(data => {
-				entry.id = data.id; // Update entry with ID
-				fetchLatestBalance(currentProduct).then(latestBalance => {
-					currentBalanceInput.value = (latestBalance <= 0 || latestBalance === undefined) ? 'Out of Stock!' : latestBalance.toFixed(2);
-					updateTables();
-				});
-			})
-			.catch(error => console.error('Error saving entry:', error));
-		});
+	        const entry = {
+	            productName: currentProduct,
+	            entryDate: date,
+	            description: description,
+	            cost: cost,
+	            quantity: quantity,
+	            inAmount: inAmount,
+	            outAmount: outAmount,
+	            balance: currentBalance,
+	            remarks: '' // Add any remarks if needed
+	        };
+
+	        if (!inventoryData[currentProduct]) {
+	            inventoryData[currentProduct] = [];
+	        }
+	        inventoryData[currentProduct].push(entry);
+
+	        // Save entry to server
+	        fetch('/inventory/add', {
+	            method: 'POST',
+	            headers: {
+	                'Content-Type': 'application/json'
+	            },
+	            body: JSON.stringify(entry)
+	        })
+	        .then(response => response.json())
+	        .then(data => {
+	            entry.id = data.id; // Update entry with ID
+	            fetchLatestBalance(currentProduct).then(latestBalance => {
+	                const balanceText = (latestBalance <= 0 || latestBalance === undefined) ? 'Out of Stock!' : latestBalance.toFixed(2);
+	                currentBalanceInput.value = balanceText;
+
+	                // Clear any existing message elements
+	                const existingMessage = inventoryFormCard.querySelector('.text-danger');
+	                if (existingMessage) {
+	                    existingMessage.remove();
+	                }
+
+	                updateTables();
+	            });
+	        })
+	        .catch(error => console.error('Error saving entry:', error));
+	    });
 	});
+
+
+
+
 
 	// Handle update Tables ajax
 	// Filter entries by product and month, then update the tables
@@ -363,7 +391,8 @@
 	                        <td>${entry.inAmount}</td>
 	                        <td>${entry.outAmount}</td>
 	                        <td>${entry.balance}</td>
-	                        <td>${entry.remarks}</td>
+                            <td>${entry.remarks || ''}</td> <!-- Default to empty string if remarks is null -->
+
 	                    `;
 	                    tbody.appendChild(tr);
 	                });

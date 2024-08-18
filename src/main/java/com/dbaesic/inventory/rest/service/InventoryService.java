@@ -31,21 +31,21 @@ public class InventoryService {
 
         BigDecimal newBalance = BigDecimal.ZERO;
 
-        // Iterate through the entries to calculate the balance
+        // Calculate the current balance
         for (Inventory entry : entries) {
-            // Calculate the balance considering each entry
             if ("Purchase of Inventory".equals(entry.getDescription())) {
                 newBalance = newBalance.add(entry.getInAmount());
             } else if ("Sale of Merchandise".equals(entry.getDescription())) {
                 newBalance = newBalance.subtract(entry.getOutAmount());
             }
-
-            // Update each entry's balance
-            entry.setBalance(newBalance);
-            inventoryRepository.save(entry);
         }
 
-        // Add the new entry to the list and calculate its balance
+        // If this is a sale, check if the sale amount exceeds the available balance
+        if (!isIn && outAmount.compareTo(newBalance) > 0) {
+            throw new IllegalArgumentException("Sale amount exceeds available stock.");
+        }
+
+        // Add the new entry to the list and update the balance
         Inventory newEntry = new Inventory();
         newEntry.setProductName(productName);
         newEntry.setEntryDate(String.valueOf(new java.sql.Date(System.currentTimeMillis()))); // Set current date
@@ -55,7 +55,7 @@ public class InventoryService {
         newEntry.setInAmount(isIn ? inAmount : BigDecimal.ZERO);
         newEntry.setOutAmount(isIn ? BigDecimal.ZERO : outAmount);
 
-        // Calculate balance after adding the new entry
+        // Update balance after adding the new entry
         if (isIn) {
             newBalance = newBalance.add(inAmount);
         } else {
