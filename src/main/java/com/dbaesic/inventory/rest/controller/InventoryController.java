@@ -13,6 +13,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,7 @@ public class InventoryController {
     public ResponseEntity<?> addEntry(@RequestBody Inventory inventory) {
         log.info("===== Inside addEntry() =====" + getClass());
 
+        // Log the received inventory entry
         log.info("Received Inventory Entry: " +
                 "ProductName='" + inventory.getProductName() + "', " +
                 "EntryDate='" + inventory.getEntryDate() + "', " +
@@ -62,6 +64,13 @@ public class InventoryController {
                 "Quantity='" + inventory.getQuantity() + "', " +
                 "InAmount='" + inventory.getInAmount() + "', " +
                 "OutAmount='" + inventory.getOutAmount() + "'");
+
+        // Set EntryDate if not provided
+        if (inventory.getEntryDate() == null) {
+            inventory.setEntryDate(String.valueOf(LocalDate.now())); // Set current date if EntryDate is not provided
+        } else {
+            inventory.setEntryDate(inventory.getEntryDate()); // Set current date if EntryDate is not
+        }
 
         Product product = productService.getProductByName(inventory.getProductName());
         if (product != null) {
@@ -83,12 +92,13 @@ public class InventoryController {
         inventory.setCost(inventory.getCost() != null ? inventory.getCost() : BigDecimal.ZERO);
 
         try {
-            inventoryService.updateBalance(inventory.getProductName(), inventory.getInAmount(), inventory.getOutAmount(), "Purchase of Inventory".equals(inventory.getDescription()));
+            inventoryService.updateBalance(inventory.getProductName(), inventory.getInAmount(), inventory.getOutAmount(), "Purchase of Inventory".equals(inventory.getDescription()), inventory.getEntryDate());
             return ResponseEntity.ok().body("{\"message\":\"Entry saved successfully\"}");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"error\":\"" + e.getMessage() + "\"}");
         }
     }
+
 
 
     @GetMapping("/latest-balance")

@@ -25,7 +25,7 @@ public class InventoryService {
         inventoryRepository.save(inventory);
     }
 
-    public void updateBalance(String productName, BigDecimal inAmount, BigDecimal outAmount, boolean isIn) {
+    public void updateBalance(String productName, BigDecimal inAmount, BigDecimal outAmount, boolean isIn, String entryDate) {
         // Retrieve all entries for the given product
         List<Inventory> entries = inventoryRepository.findByProductNameOrderByEntryDateAsc(productName);
 
@@ -48,7 +48,7 @@ public class InventoryService {
         // Add the new entry to the list and update the balance
         Inventory newEntry = new Inventory();
         newEntry.setProductName(productName);
-        newEntry.setEntryDate(String.valueOf(new java.sql.Date(System.currentTimeMillis()))); // Set current date
+        newEntry.setEntryDate(entryDate); // Set current date
         newEntry.setDescription(isIn ? "Purchase of Inventory" : "Sale of Merchandise");
         newEntry.setCost(BigDecimal.ZERO); // Set an appropriate cost if needed
         newEntry.setQuantity(0); // Set the appropriate quantity if needed

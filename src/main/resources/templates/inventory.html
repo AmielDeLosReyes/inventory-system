@@ -254,9 +254,10 @@
 	});
 
 	// Handle inventory form submission
+	// Handle inventory form submission
 	document.getElementById('inventoryForm').addEventListener('submit', function(event) {
 	    event.preventDefault();
-	    const date = document.getElementById('entryDate').value;
+	    const date = document.getElementById('entryDate').value; // Retrieve the date
 	    const description = document.getElementById('description').value;
 	    const cost = parseFloat(costInput.value);
 	    const quantity = parseInt(document.getElementById('quantity').value);
@@ -293,7 +294,7 @@
 
 	        const entry = {
 	            productName: currentProduct,
-	            entryDate: date,
+	            entryDate: date, // Ensure this is set correctly
 	            description: description,
 	            cost: cost,
 	            quantity: quantity,
@@ -335,6 +336,7 @@
 	        .catch(error => console.error('Error saving entry:', error));
 	    });
 	});
+
 
 
 
