@@ -92,7 +92,7 @@ public class InventoryController {
         inventory.setCost(inventory.getCost() != null ? inventory.getCost() : BigDecimal.ZERO);
 
         try {
-            inventoryService.updateBalance(inventory.getProductName(), inventory.getInAmount(), inventory.getOutAmount(), "Purchase of Inventory".equals(inventory.getDescription()), inventory.getEntryDate());
+            inventoryService.updateBalance(inventory.getProductName(), inventory.getInAmount(), inventory.getOutAmount(), "Purchase of Inventory".equals(inventory.getDescription()), inventory.getEntryDate(), inventory.getCost(), inventory.getQuantity());
             return ResponseEntity.ok().body("{\"message\":\"Entry saved successfully\"}");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"error\":\"" + e.getMessage() + "\"}");
