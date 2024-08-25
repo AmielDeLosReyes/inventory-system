@@ -17,7 +17,7 @@ public class ProductRestController {
 
     @GetMapping
     public List<Product> getAllProducts() {
-        return productService.getAllProducts();
+        return productService.getActiveProducts();
     }
 
     @GetMapping("/{name}/cost")

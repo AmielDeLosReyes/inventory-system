@@ -41,4 +41,16 @@ public class Inventory {
 
     @Column(name = "remarks")
     private String remarks;
+
+    @Column(name = "status_code")
+    private String statusCode;
+
+    @Column(name = "added_by")
+    private String addedBy;
+    @Column(name = "added_date")
+    private String addedDate;
+    @Column(name = "modified_by")
+    private String modifiedBy;
+    @Column(name = "modified_date")
+    private String modifiedDate;
 }
