@@ -109,7 +109,11 @@
         <td th:text="${product.name}"></td>
         <td th:text="'₱' + ${product.price}"></td>
         <td>
-          <form th:action="@{/product/delete/{id}(id=${product.id})}" method="post" onsubmit="return confirmDelete()">
+          <!-- Edit Button -->
+          <a th:href="@{/product/edit/{id}(id=${product.id})}" class="btn-custom">Edit</a>
+
+          <!-- Delete Button -->
+          <form th:action="@{/product/delete/{id}(id=${product.id})}" method="post" onsubmit="return confirmDelete()" style="display: inline;">
             <button type="submit" class="btn-custom">Delete</button>
           </form>
         </td>
