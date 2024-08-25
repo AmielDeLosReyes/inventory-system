@@ -31,6 +31,26 @@ CREATE TABLE products (
     price DECIMAL(10, 2) NOT NULL
 );
 
+-- Add columns to the inventory table
+ALTER TABLE inventory
+ADD COLUMN status_code VARCHAR(10) DEFAULT '1',
+ADD COLUMN added_by VARCHAR(255) DEFAULT 'SYSTEM',
+ADD COLUMN added_date VARCHAR(20) DEFAULT '2024-08-25', -- Set a static default date
+ADD COLUMN modified_by VARCHAR(255) DEFAULT 'SYSTEM',
+ADD COLUMN modified_date VARCHAR(20) DEFAULT '2024-08-25'; -- Set a static default date
+
+-- Add columns to the products table
+ALTER TABLE products
+ADD COLUMN status_code VARCHAR(10) DEFAULT '1',
+ADD COLUMN added_by VARCHAR(255) DEFAULT 'SYSTEM',
+ADD COLUMN added_date VARCHAR(20) DEFAULT '2024-08-25', -- Set a static default date
+ADD COLUMN modified_by VARCHAR(255) DEFAULT 'SYSTEM',
+ADD COLUMN modified_date VARCHAR(20) DEFAULT '2024-08-25'; -- Set a static default date
+
+
+
+
+
 INSERT INTO products (name, price) VALUES
     ('Georgina', 35),
     ('Mia', 40),

@@ -23,5 +23,9 @@ public class ProductService {
                 .findFirst()
                 .orElse(null);
     }
+
+    public void saveProduct(Product product) {
+        productRepository.save(product);
+    }
 }
 
