@@ -64,7 +64,7 @@ public class ProductController {
     }
 
 
-    @PostMapping("/product/update")
+    @PostMapping("/update")
     public String updateProduct(@RequestParam("id") Long id,
                                 @RequestParam("name") String name,
                                 @RequestParam("price") Double price,
