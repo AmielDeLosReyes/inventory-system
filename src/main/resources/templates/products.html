@@ -8,68 +8,46 @@
   <link rel="stylesheet" href="/css/products.css"> <!-- Link to external CSS file -->
 </head>
 <body>
-<!-- Navigation Bar -->
-<nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
   <div class="container">
-    <a class="navbar-brand" href="#">D'Baesics Inventory Management</a>
-    <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-      <span class="navbar-toggler-icon"></span>
-    </button>
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <ul class="navbar-nav">
-        <li class="nav-item">
-          <a class="nav-link" href="/inventory">Home</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/dashboard">Dashboard</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/product/add-product">Add Product</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" href="/settings">Settings</a>
-        </li>
-      </ul>
+
+    <!-- Include Navigation Bar -->
+    <div th:replace="fragments/navbar :: navbar"></div>
+
+    <!-- Success Alert -->
+    <div id="successAlert" class="alert alert-success" role="alert" th:if="${successMessage}" th:text="${successMessage}" style="display: none;"></div>
+
+    <div th:if="${products == null or #lists.isEmpty(products)}" class="no-products-container">
+      <p class="no-products-message">No products yet. Start by adding a new product!</p>
+      <a href="/product/add-product" class="btn-custom">Add Product</a>
+    </div>
+
+    <div th:unless="${products == null or #lists.isEmpty(products)}" class="card-body">
+      <table class="table">
+        <thead>
+        <tr>
+          <th>Product Name</th>
+          <th>Product Price</th>
+          <th>Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="product : ${products}">
+          <td th:text="${product.name}"></td>
+          <td th:text="'₱' + ${product.price}"></td>
+          <td>
+            <!-- Edit Button -->
+            <a th:href="@{/product/edit/{id}(id=${product.id})}" class="btn-custom">Edit</a>
+
+            <!-- Delete Button -->
+            <form th:action="@{/product/delete/{id}(id=${product.id})}" method="post" onsubmit="return confirmDelete()" style="display: inline;">
+              <button type="submit" class="btn-custom">Delete</button>
+            </form>
+          </td>
+        </tr>
+        </tbody>
+      </table>
     </div>
   </div>
-</nav>
-
-<div class="container">
-  <!-- Success Alert -->
-  <div id="successAlert" class="alert alert-success" role="alert" th:if="${successMessage}" th:text="${successMessage}" style="display: none;"></div>
-
-  <div th:if="${products == null or #lists.isEmpty(products)}" class="no-products-container">
-    <p class="no-products-message">No products yet. Start by adding a new product!</p>
-    <a href="/product/add-product" class="btn-custom">Add Product</a>
-  </div>
-
-  <div th:unless="${products == null or #lists.isEmpty(products)}" class="card-body">
-    <table class="table">
-      <thead>
-      <tr>
-        <th>Product Name</th>
-        <th>Product Price</th>
-        <th>Actions</th>
-      </tr>
-      </thead>
-      <tbody>
-      <tr th:each="product : ${products}">
-        <td th:text="${product.name}"></td>
-        <td th:text="'₱' + ${product.price}"></td>
-        <td>
-          <!-- Edit Button -->
-          <a th:href="@{/product/edit/{id}(id=${product.id})}" class="btn-custom">Edit</a>
-
-          <!-- Delete Button -->
-          <form th:action="@{/product/delete/{id}(id=${product.id})}" method="post" onsubmit="return confirmDelete()" style="display: inline;">
-            <button type="submit" class="btn-custom">Delete</button>
-          </form>
-        </td>
-      </tr>
-      </tbody>
-    </table>
-  </div>
-</div>
 
 <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.5.2/dist/umd/popper.min.js"></script>
