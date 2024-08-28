@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - D'Baesics Inventory Management</title>
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+  <link rel="stylesheet" href="/css/login.css"> <!-- Link to external CSS file -->
+</head>
+<body>
+
+<div class="header">
+  <h1>D'Baesics Inventory Management System</h1>
+</div>
+
+<div class="container">
+  <div class="login-container">
+    <h2>Login</h2>
+    <form id="loginForm" action="/login" method="post">
+      <div class="form-group">
+        <label for="username">Username</label>
+        <input type="text" class="form-control" id="username" name="username" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input type="password" class="form-control" id="password" name="password" required>
+      </div>
+      <button type="submit" class="btn-custom">Login</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.3/dist/umd/popper.min.js"></script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+
+<footer>
+  <p>&copy; 2024 Claymore Tech Solutions. All rights reserved.</p>
+  <p>No part of this site or its content may be reproduced without permission.</p>
+</footer>
+
+<script>
+  document.getElementById('loginForm').addEventListener('submit', function(event) {
+	  // Implement custom validation or additional features here if needed
+  });
+</script>
+
+</body>
+</html>

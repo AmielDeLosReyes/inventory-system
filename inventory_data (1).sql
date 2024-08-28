@@ -19,8 +19,15 @@ CREATE TABLE inventory (
     in_amount DECIMAL(10, 2),
     out_amount DECIMAL(10, 2),
     balance DECIMAL(10, 2),
-    remarks TEXT
+    remarks TEXT,
+    status_code VARCHAR(10) DEFAULT '1',
+    added_by VARCHAR(255) DEFAULT 'SYSTEM',
+	added_date VARCHAR(20),  -- Leave default value out
+    modified_by VARCHAR(255) DEFAULT 'SYSTEM',
+	modified_date VARCHAR(20) -- Automatically update on row modification
+
 );
+
 
 select * from inventory;
 select * from products;
@@ -28,8 +35,14 @@ select * from products;
 CREATE TABLE products (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    price DECIMAL(10, 2) NOT NULL
+    price DECIMAL(10, 2) NOT NULL,
+    status_code VARCHAR(10) DEFAULT '1',
+    added_by VARCHAR(255) DEFAULT 'SYSTEM',
+	added_date VARCHAR(20),  -- Leave default value out
+    modified_by VARCHAR(255) DEFAULT 'SYSTEM',
+	modified_date VARCHAR(20) -- Automatically update on row modification
 );
+
 
 -- Add columns to the inventory table
 ALTER TABLE inventory
@@ -79,7 +92,8 @@ WHERE product_name = 'Georgina'
 ORDER BY entry_date DESC, id DESC
 LIMIT 1;
 
--- truncate table inventory;
+truncate table inventory;
+truncate table products;
 SHOW COLUMNS FROM inventory;
 
 -- Script to get daily quantities and out_amounts

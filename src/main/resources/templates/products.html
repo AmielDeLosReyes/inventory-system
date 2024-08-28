@@ -5,64 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Product List</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-    }
-    .card {
-      margin-top: 20px;
-    }
-    .card-header {
-      background-color: #563D2D;
-      color: white;
-      font-size: 1.25rem;
-    }
-    .card-body {
-      padding: 20px;
-    }
-    .product-item {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      border-bottom: 1px solid #ddd;
-      padding: 10px 0;
-    }
-    .product-item:last-child {
-      border-bottom: none;
-    }
-    .product-name {
-      font-size: 1.2rem;
-    }
-    .product-price {
-      font-size: 1.1rem;
-      color: #563D2D;
-    }
-    .btn-custom {
-      background-color: rgb(170, 130, 115);
-      border: none;
-      color: white;
-      padding: 10px 20px;
-      text-align: center;
-      text-decoration: none;
-      display: inline-block;
-      font-size: 16px;
-      margin: 4px 2px;
-      cursor: pointer;
-      border-radius: 5px;
-    }
-    .btn-custom:hover {
-      background-color: rgb(150, 110, 95);
-    }
-    .product-titles {
-      display: flex;
-      justify-content: space-between;
-      font-weight: bold;
-      margin-bottom: 10px;
-    }
-    .alert {
-      margin-top: 20px;
-    }
-  </style>
+  <link rel="stylesheet" href="/css/products.css"> <!-- Link to external CSS file -->
 </head>
 <body>
 <!-- Navigation Bar -->
@@ -95,7 +38,12 @@
   <!-- Success Alert -->
   <div id="successAlert" class="alert alert-success" role="alert" th:if="${successMessage}" th:text="${successMessage}" style="display: none;"></div>
 
-  <div class="card-body">
+  <div th:if="${products == null or #lists.isEmpty(products)}" class="no-products-container">
+    <p class="no-products-message">No products yet. Start by adding a new product!</p>
+    <a href="/product/add-product" class="btn-custom">Add Product</a>
+  </div>
+
+  <div th:unless="${products == null or #lists.isEmpty(products)}" class="card-body">
     <table class="table">
       <thead>
       <tr>

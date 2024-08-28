@@ -1,0 +1,65 @@
+<style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f5f5f5;
+      margin: 0;
+      padding: 0;
+    }
+    .header {
+      background-color: #563D2D;
+      padding: 20px;
+      color: white;
+      text-align: center;
+    }
+    .coming-soon-container {
+      max-width: 600px;
+      margin: 150px auto;
+      padding: 30px;
+      background-color: white;
+      border-radius: 10px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+      text-align: center;
+    }
+    .coming-soon-container h1 {
+      color: #563D2D;
+      margin-bottom: 20px;
+    }
+    .coming-soon-container p {
+      color: #563D2D;
+      font-size: 1.2rem;
+      margin-bottom: 30px;
+    }
+    .btn-custom {
+      background-color: rgb(170, 130, 115);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      font-size: 16px;
+      cursor: pointer;
+      border-radius: 5px;
+      display: inline-block;
+      text-transform: uppercase;
+    }
+    .btn-custom:hover {
+      background-color: rgb(150, 110, 95); /* Lighter shade for hover */
+      color: white;
+      text-decoration: none;
+    }
+    .contact-info {
+      font-size: 1rem;
+      color: #563D2D;
+    }
+    footer {
+      background-color: #563D2D;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      margin-top: 50px;
+    }
+    footer p {
+      margin: 0;
+      font-size: 0.9rem;
+    }
+  </style>

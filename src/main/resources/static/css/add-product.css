@@ -1,0 +1,37 @@
+<style>
+    body {
+      font-family: Arial, sans-serif;
+    }
+    .card {
+      margin-bottom: 20px;
+    }
+    .card-header {
+      background-color: #563D2D;
+      color: white;
+      font-size: 1.25rem;
+    }
+    .card-body {
+      padding: 20px;
+    }
+    .btn-custom {
+      background-color: rgb(170, 130, 115);
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      text-align: center;
+      text-decoration: none;
+      display: inline-block;
+      font-size: 16px;
+      margin: 4px 2px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .btn-custom:hover {
+      background-color: rgb(150, 110, 95);
+    }
+    .error-message {
+      color: red;
+      font-size: 0.9rem;
+      display: none;
+    }
+  </style>
