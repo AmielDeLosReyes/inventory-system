@@ -92,6 +92,27 @@ monthSelect.addEventListener('change', function() {
     updateTables();
 });
 
+// Function to show an error message
+function showErrorMessage(message) {
+    const messageElement = document.createElement('div');
+    messageElement.textContent = message;
+    messageElement.className = 'text-danger'; // Add red text class
+    inventoryFormCard.appendChild(messageElement);
+
+    // Remove the message after 5 seconds
+    setTimeout(() => {
+        messageElement.remove();
+    }, 5000); // 5000 milliseconds = 5 seconds
+}
+
+// Function to clear any error messages
+function clearErrorMessage() {
+    const existingMessage = inventoryFormCard.querySelector('.text-danger');
+    if (existingMessage) {
+        existingMessage.remove();
+    }
+}
+
 // Handle inventory form submission
 // Handle inventory form submission
 document.getElementById('inventoryForm').addEventListener('submit', function(event) {
