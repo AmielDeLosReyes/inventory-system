@@ -53,9 +53,8 @@ public class InventoryController {
 
     @PostMapping("/add")
     public ResponseEntity<?> addEntry(@RequestBody Inventory inventory) {
-        log.info("===== Inside addEntry() =====" + getClass());
+        log.info("===== Inside addEntry() =====");
 
-        // Log the received inventory entry
         log.info("Received Inventory Entry: " +
                 "ProductName='" + inventory.getProductName() + "', " +
                 "EntryDate='" + inventory.getEntryDate() + "', " +
@@ -65,11 +64,8 @@ public class InventoryController {
                 "InAmount='" + inventory.getInAmount() + "', " +
                 "OutAmount='" + inventory.getOutAmount() + "'");
 
-        // Set EntryDate if not provided
         if (inventory.getEntryDate() == null) {
             inventory.setEntryDate(String.valueOf(LocalDate.now())); // Set current date if EntryDate is not provided
-        } else {
-            inventory.setEntryDate(inventory.getEntryDate()); // Set current date if EntryDate is not
         }
 
         Product product = productService.getProductByName(inventory.getProductName());
@@ -78,26 +74,36 @@ public class InventoryController {
             log.info("Product price: " + product.getPrice());
         }
 
+        // Determine if the entry is for damaged goods
+        boolean isDamaged = "Damaged Goods".equals(inventory.getDescription());
+
+        // Check description for purchase, sale, or damaged goods
         if ("Purchase of Inventory".equals(inventory.getDescription())) {
-            log.info("Invoking Purchase of Inventory...");
+            log.info("Processing Purchase of Inventory...");
             inventory.setInAmount(inventory.getCost().multiply(BigDecimal.valueOf(inventory.getQuantity())));
             inventory.setOutAmount(BigDecimal.ZERO);
-        } else if ("Sale of Merchandise".equals(inventory.getDescription())) {
-            log.info("Invoking Sale of Merchandise...");
+        } else if ("Sale of Merchandise".equals(inventory.getDescription()) || isDamaged) {
+            log.info("Processing Sale of Merchandise or Damaged Goods...");
             inventory.setOutAmount(inventory.getCost().multiply(BigDecimal.valueOf(inventory.getQuantity())));
             inventory.setInAmount(BigDecimal.ZERO);
         }
 
-        inventory.setQuantity(inventory.getQuantity() != 0 ? inventory.getQuantity() : 0);
-        inventory.setCost(inventory.getCost() != null ? inventory.getCost() : BigDecimal.ZERO);
-
         try {
-            inventoryService.updateBalance(inventory.getProductName(), inventory.getInAmount(), inventory.getOutAmount(), "Purchase of Inventory".equals(inventory.getDescription()), inventory.getEntryDate(), inventory.getCost(), inventory.getQuantity());
+            inventoryService.updateBalance(
+                    inventory.getProductName(),
+                    inventory.getInAmount(),
+                    inventory.getOutAmount(),
+                    !"Sale of Merchandise".equals(inventory.getDescription()) && !isDamaged, // isIn parameter
+                    inventory.getEntryDate(),
+                    inventory.getCost(),
+                    inventory.getQuantity(),
+                    isDamaged); // Pass the isDamaged parameter
             return ResponseEntity.ok().body("{\"message\":\"Entry saved successfully\"}");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"error\":\"" + e.getMessage() + "\"}");
         }
     }
+
 
 
 

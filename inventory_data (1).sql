@@ -92,8 +92,8 @@ WHERE product_name = 'Georgina'
 ORDER BY entry_date DESC, id DESC
 LIMIT 1;
 
-truncate table inventory;
-truncate table products;
+-- truncate table inventory;
+-- truncate table products;
 SHOW COLUMNS FROM inventory;
 
 -- Script to get daily quantities and out_amounts

@@ -25,7 +25,7 @@ public class InventoryService {
         inventoryRepository.save(inventory);
     }
 
-    public void updateBalance(String productName, BigDecimal inAmount, BigDecimal outAmount, boolean isIn, String entryDate, BigDecimal cost, int quantity) {
+    public void updateBalance(String productName, BigDecimal inAmount, BigDecimal outAmount, boolean isIn, String entryDate, BigDecimal cost, int quantity, boolean isDamaged) {
         // Retrieve all entries for the given product
         List<Inventory> entries = inventoryRepository.findByProductNameOrderByEntryDateAsc(productName);
 
@@ -35,33 +35,36 @@ public class InventoryService {
         for (Inventory entry : entries) {
             if ("Purchase of Inventory".equals(entry.getDescription())) {
                 newBalance = newBalance.add(entry.getInAmount());
-            } else if ("Sale of Merchandise".equals(entry.getDescription())) {
+            } else if ("Sale of Merchandise".equals(entry.getDescription()) || "Damaged Goods".equals(entry.getDescription())) {
                 newBalance = newBalance.subtract(entry.getOutAmount());
             }
         }
 
-        // If this is a sale, check if the sale amount exceeds the available balance
+        // Check if the sale or damage amount exceeds the available balance
         if (!isIn && outAmount.compareTo(newBalance) > 0) {
-            throw new IllegalArgumentException("Sale amount exceeds available stock.");
+            throw new IllegalArgumentException("Sale or damaged goods amount exceeds available stock.");
         }
 
-        // Add the new entry to the list and update the balance
+        // Create a new inventory entry
         Inventory newEntry = new Inventory();
         newEntry.setProductName(productName);
-        newEntry.setEntryDate(entryDate); // Set current date
-        newEntry.setDescription(isIn ? "Purchase of Inventory" : "Sale of Merchandise");
-        newEntry.setCost(cost); // Set an appropriate cost if needed
-        newEntry.setQuantity(quantity); // Set the appropriate quantity if needed
-        newEntry.setInAmount(isIn ? inAmount : BigDecimal.ZERO);
-        newEntry.setOutAmount(isIn ? BigDecimal.ZERO : outAmount);
+        newEntry.setEntryDate(entryDate); // Set the entry date
+        newEntry.setDescription(isIn ? "Purchase of Inventory" : (isDamaged ? "Damaged Goods" : "Sale of Merchandise"));
+        newEntry.setCost(cost); // Set the cost if applicable
+        newEntry.setQuantity(quantity); // Set the quantity
 
-        // Update balance after adding the new entry
+        // Update the inAmount and outAmount based on the type of entry
         if (isIn) {
+            newEntry.setInAmount(inAmount);
+            newEntry.setOutAmount(BigDecimal.ZERO);
             newBalance = newBalance.add(inAmount);
         } else {
+            newEntry.setInAmount(BigDecimal.ZERO);
+            newEntry.setOutAmount(outAmount);
             newBalance = newBalance.subtract(outAmount);
         }
 
+        // Set the new balance
         newEntry.setBalance(newBalance);
 
         // Save the new entry
@@ -78,7 +81,7 @@ public class InventoryService {
         for (Inventory entry : entries) {
             if ("Purchase of Inventory".equals(entry.getDescription())) {
                 balance = balance.add(entry.getInAmount());
-            } else if ("Sale of Merchandise".equals(entry.getDescription())) {
+            } else if ("Sale of Merchandise".equals(entry.getDescription()) || "Damaged Goods".equals(entry.getDescription())) {
                 balance = balance.subtract(entry.getOutAmount());
             }
         }
