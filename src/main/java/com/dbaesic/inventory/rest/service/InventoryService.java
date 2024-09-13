@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Slf4j
@@ -49,6 +50,11 @@ public class InventoryService {
         Inventory newEntry = new Inventory();
         newEntry.setProductName(productName);
         newEntry.setEntryDate(entryDate); // Set the entry date
+        newEntry.setStatusCode("1");
+        newEntry.setAddedBy("USER");
+        newEntry.setAddedDate(entryDate);
+        newEntry.setModifiedBy("USER");
+        newEntry.setModifiedDate(String.valueOf(LocalDateTime.now()));
 
         if (isInitialInventory) {
             newEntry.setDescription("Initial Inventory");

@@ -65,7 +65,7 @@ public class InventoryController {
                 "OutAmount='" + inventory.getOutAmount() + "'");
 
         if (inventory.getEntryDate() == null) {
-            inventory.setEntryDate(String.valueOf(LocalDate.now())); // Set current date if EntryDate is not provided
+            inventory.setEntryDate(String.valueOf(LocalDate.now()));
         }
 
         Product product = productService.getProductByName(inventory.getProductName());

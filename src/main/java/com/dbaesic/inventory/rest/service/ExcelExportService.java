@@ -15,9 +15,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -262,7 +260,11 @@ public class ExcelExportService {
             BigDecimal productTotalOutAmount = BigDecimal.ZERO;
             int productTotalQuantity = 0;
 
-            for (Map.Entry<String, SalesData> dateEntry : productEntry.getValue().entrySet()) {
+            // Sort the dates before adding to the sheet
+            List<Map.Entry<String, SalesData>> sortedEntries = new ArrayList<>(productEntry.getValue().entrySet());
+            sortedEntries.sort(Map.Entry.comparingByKey());
+
+            for (Map.Entry<String, SalesData> dateEntry : sortedEntries) {
                 SalesData salesData = dateEntry.getValue();
                 Row row = salesSummarySheet.createRow(rowNum++);
                 row.createCell(0).setCellValue(dateEntry.getKey()); // Entry Date
@@ -319,6 +321,7 @@ public class ExcelExportService {
         }
     }
 
+
     private Map<String, Map<String, SalesData>> aggregateSalesData(List<Inventory> inventories) {
         return inventories.stream()
                 .filter(inventory -> inventory.getOutAmount() != null && inventory.getOutAmount().compareTo(BigDecimal.ZERO) > 0)
@@ -359,7 +362,6 @@ public class ExcelExportService {
             return totalQuantity;
         }
     }
-
     private void createPurchaseInventorySummarySheet(XSSFWorkbook workbook) {
         List<Inventory> allInventories = inventoryRepository.findAll();
 
@@ -388,7 +390,7 @@ public class ExcelExportService {
         titleCell.setCellStyle(titleStyle);
 
         // Merge cells for the title
-        purchaseSummarySheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 4)); // Adjusted range for purchase inventory
+        purchaseSummarySheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 5)); // Adjusted range for purchase inventory
 
         // Create header row for the columns
         Row headerRow = purchaseSummarySheet.createRow(1);
@@ -398,7 +400,6 @@ public class ExcelExportService {
         headerRow.createCell(3).setCellValue("Total In Amount");
         headerRow.createCell(4).setCellValue("Total Quantity");
         headerRow.createCell(5).setCellValue("Total Summary"); // New header for summary
-
 
         // Style for the header row
         CellStyle headerStyle = workbook.createCellStyle();
@@ -429,7 +430,10 @@ public class ExcelExportService {
             BigDecimal productTotalInAmount = BigDecimal.ZERO;
             int productTotalQuantity = 0;
 
-            for (Map.Entry<String, PurchaseData> dateEntry : productEntry.getValue().entrySet()) {
+            // Sort entries by date
+            Map<String, PurchaseData> sortedDateEntries = new TreeMap<>(productEntry.getValue());
+
+            for (Map.Entry<String, PurchaseData> dateEntry : sortedDateEntries.entrySet()) {
                 PurchaseData purchaseData = dateEntry.getValue();
                 Row row = purchaseSummarySheet.createRow(rowNum++);
                 row.createCell(0).setCellValue(dateEntry.getKey()); // Entry Date
@@ -487,7 +491,6 @@ public class ExcelExportService {
         }
     }
 
-    // Example method to aggregate purchase data
     private Map<String, Map<String, PurchaseData>> aggregatePurchaseData(List<Inventory> inventories) {
         return inventories.stream()
                 .filter(inventory -> "Purchase of Inventory".equals(inventory.getDescription())) // Filter purchases only
@@ -511,7 +514,7 @@ public class ExcelExportService {
     }
 
     // PurchaseData class to hold aggregated purchase data
-    public class PurchaseData {
+    public static class PurchaseData {
         private BigDecimal totalInAmount;
         private int totalQuantity;
 
@@ -528,6 +531,7 @@ public class ExcelExportService {
             return totalQuantity;
         }
     }
+
 
 
 }
