@@ -69,13 +69,32 @@ public class ExcelExportService {
 
             int rowNum = 1;
 
-            // Calculate totals for Purchase of Inventory, Sale of Merchandise, and Damaged Goods
+            // Calculate totals for Purchase of Inventory, Sale of Merchandise, Damaged Goods, and Initial Inventory
             int purchaseQuantity = 0;
             int saleQuantity = 0;
             int damagedQuantity = 0;
+            int initialInventoryQuantity = 0;
             BigDecimal purchaseTotal = BigDecimal.ZERO;
             BigDecimal saleTotal = BigDecimal.ZERO;
             BigDecimal damagedTotal = BigDecimal.ZERO;
+            BigDecimal initialInventoryTotal = BigDecimal.ZERO;
+
+            // Define cell styles for different types
+            CellStyle purchaseStyle = workbook.createCellStyle();
+            purchaseStyle.setFillForegroundColor(new XSSFColor(new byte[]{(byte)0, (byte)128, (byte)0})); // Matte green color
+            purchaseStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle saleStyle = workbook.createCellStyle();
+            saleStyle.setFillForegroundColor(new XSSFColor(new byte[]{(byte)178, (byte)34, (byte)34})); // Matte red color
+            saleStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle damagedStyle = workbook.createCellStyle();
+            damagedStyle.setFillForegroundColor(new XSSFColor(new byte[]{(byte)255, (byte)165, (byte)0})); // Orange color
+            damagedStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            CellStyle initialInventoryStyle = workbook.createCellStyle();
+            initialInventoryStyle.setFillForegroundColor(new XSSFColor(new byte[]{(byte)70, (byte)130, (byte)180})); // Steel blue color
+            initialInventoryStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
 
             for (Inventory inventory : inventories) {
                 Row row = inventorySheet.createRow(rowNum++);
@@ -94,20 +113,33 @@ public class ExcelExportService {
                 row.createCell(6).setCellValue(inventory.getBalance() != null ? inventory.getBalance().toString() : "");
                 row.createCell(7).setCellValue(inventory.getRemarks());
 
-                // Accumulate counts and totals
+                // Apply color based on description and update totals
                 if ("Purchase of Inventory".equals(inventory.getDescription())) {
                     purchaseTotal = purchaseTotal.add(inventory.getInAmount() != null ? inventory.getInAmount() : BigDecimal.ZERO);
                     purchaseQuantity += inventory.getQuantity();
+                    row.setRowStyle(purchaseStyle);
                 } else if ("Sale of Merchandise".equals(inventory.getDescription())) {
                     saleTotal = saleTotal.add(inventory.getOutAmount() != null ? inventory.getOutAmount() : BigDecimal.ZERO);
                     saleQuantity += inventory.getQuantity();
+                    row.setRowStyle(saleStyle);
                 } else if ("Damaged Goods".equals(inventory.getDescription())) {
                     damagedTotal = damagedTotal.add(inventory.getOutAmount() != null ? inventory.getOutAmount() : BigDecimal.ZERO);
                     damagedQuantity += inventory.getQuantity();
+                    row.setRowStyle(damagedStyle);
+                    // Add to Sale of Merchandise total
+                    saleTotal = saleTotal.add(inventory.getOutAmount() != null ? inventory.getOutAmount() : BigDecimal.ZERO);
+                    saleQuantity += inventory.getQuantity();
+                } else if ("Initial Inventory".equals(inventory.getDescription())) {
+                    initialInventoryTotal = initialInventoryTotal.add(inventory.getInAmount() != null ? inventory.getInAmount() : BigDecimal.ZERO);
+                    initialInventoryQuantity += inventory.getQuantity();
+                    // Add to Purchase of Inventory total
+                    purchaseTotal = purchaseTotal.add(inventory.getInAmount() != null ? inventory.getInAmount() : BigDecimal.ZERO);
+                    purchaseQuantity += inventory.getQuantity();
+                    row.setRowStyle(initialInventoryStyle);
                 }
             }
 
-            // Highlight Purchase of Inventory, Sale of Merchandise, and Damaged Goods cells
+            // Highlight totals
             Row purchaseRow = inventorySheet.createRow(rowNum++);
             Cell purchaseLabelCell = purchaseRow.createCell(0);
             purchaseLabelCell.setCellValue("Purchase of Inventory");
@@ -129,19 +161,27 @@ public class ExcelExportService {
             damagedRow.createCell(1).setCellValue("₱ " + damagedTotal.toString());
             damagedRow.createCell(3).setCellValue(damagedQuantity); // Total quantity damaged
 
+            // Highlight Initial Inventory totals
+            Row initialInventoryRow = inventorySheet.createRow(rowNum++);
+            Cell initialInventoryLabelCell = initialInventoryRow.createCell(0);
+            initialInventoryLabelCell.setCellValue("Initial Inventory");
+            applyCellColor(initialInventoryLabelCell, new XSSFColor(new byte[]{(byte)70, (byte)130, (byte)180}));  // Steel blue color
+            initialInventoryRow.createCell(1).setCellValue("₱ " + initialInventoryTotal.toString());
+            initialInventoryRow.createCell(3).setCellValue(initialInventoryQuantity); // Total quantity initial inventory
+
             // Add stock status below the totals
             Row stockStatusRow = inventorySheet.createRow(rowNum++);
             Cell stockStatusLabelCell = stockStatusRow.createCell(0);
             stockStatusLabelCell.setCellValue("Stock Status");
 
-            int stockQuantity = purchaseQuantity - saleQuantity - damagedQuantity;  // Subtract damaged goods from stock
+            int stockQuantity = purchaseQuantity - saleQuantity - damagedQuantity + initialInventoryQuantity;  // Include initial inventory
             String stockStatus = getStockStatus(BigDecimal.valueOf(stockQuantity));
             stockStatusRow.createCell(3).setCellValue(stockQuantity); // Show stock quantity
             stockStatusRow.createCell(1).setCellValue(stockStatus); // Show stock status
             applyStockStatusColor(stockStatusRow.getCell(1), stockStatus); // Color based on stock status
 
-            // Auto-size columns
-            for (int i = 0; i < 8; i++) { // Adjusted to 8 columns as the Status column is removed
+            // Adjust column widths
+            for (int i = 0; i < 8; i++) {
                 inventorySheet.autoSizeColumn(i);
             }
         }
