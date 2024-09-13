@@ -31,6 +31,7 @@ public class ExcelExportService {
         XSSFWorkbook workbook = new XSSFWorkbook();
         createInventorySheet(workbook);
         createSalesSummarySheet(workbook);
+        createPurchaseInventorySummarySheet(workbook);
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         workbook.write(out);
         return new ByteArrayInputStream(out.toByteArray());
@@ -358,4 +359,175 @@ public class ExcelExportService {
             return totalQuantity;
         }
     }
+
+    private void createPurchaseInventorySummarySheet(XSSFWorkbook workbook) {
+        List<Inventory> allInventories = inventoryRepository.findAll();
+
+        // Create Purchase Inventory Summary sheet
+        XSSFSheet purchaseSummarySheet = workbook.createSheet("Purchase Inventory Summary");
+
+        // Create and style the header row for the "Purchase Inventory Summary" title
+        Row titleRow = purchaseSummarySheet.createRow(0);
+        Cell titleCell = titleRow.createCell(0);
+        titleCell.setCellValue("Purchase Inventory Summary");
+
+        // Style for the title
+        CellStyle titleStyle = workbook.createCellStyle();
+        Font titleFont = workbook.createFont();
+        titleFont.setBold(true);
+        titleFont.setFontHeightInPoints((short) 24); // Larger font size
+        titleFont.setColor(IndexedColors.WHITE.getIndex());
+        titleStyle.setFont(titleFont);
+
+        // Custom color for title background
+        XSSFColor titleColor = new XSSFColor(new byte[] {86, 61, 45}); // RGB: (86, 61, 45)
+        titleStyle.setFillForegroundColor(titleColor);
+        titleStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        titleStyle.setAlignment(HorizontalAlignment.CENTER);
+        titleStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        titleCell.setCellStyle(titleStyle);
+
+        // Merge cells for the title
+        purchaseSummarySheet.addMergedRegion(new CellRangeAddress(0, 0, 0, 4)); // Adjusted range for purchase inventory
+
+        // Create header row for the columns
+        Row headerRow = purchaseSummarySheet.createRow(1);
+        headerRow.createCell(0).setCellValue("Entry Date");
+        headerRow.createCell(1).setCellValue("Product Name");
+        headerRow.createCell(2).setCellValue("Description");
+        headerRow.createCell(3).setCellValue("Total In Amount");
+        headerRow.createCell(4).setCellValue("Total Quantity");
+        headerRow.createCell(5).setCellValue("Total Summary"); // New header for summary
+
+
+        // Style for the header row
+        CellStyle headerStyle = workbook.createCellStyle();
+        Font headerFont = workbook.createFont();
+        headerFont.setBold(true);
+        headerFont.setFontHeightInPoints((short) 14); // Larger font size
+        headerFont.setColor(IndexedColors.WHITE.getIndex());
+        headerStyle.setFont(headerFont);
+
+        // Custom color for header background
+        XSSFColor headerColor = new XSSFColor(new byte[] {(byte) 170, (byte) 130, 115}); // Lighter RGB: (170, 130, 115)
+        headerStyle.setFillForegroundColor(headerColor);
+        headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+        headerStyle.setBorderBottom(BorderStyle.THIN);
+        headerStyle.setBorderLeft(BorderStyle.THIN);
+        headerStyle.setBorderRight(BorderStyle.THIN);
+        headerStyle.setBorderTop(BorderStyle.THIN);
+        headerStyle.setAlignment(HorizontalAlignment.CENTER);
+        headerStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+        headerRow.forEach(cell -> cell.setCellStyle(headerStyle));
+
+        // Filter and aggregate purchase data
+        Map<String, Map<String, PurchaseData>> purchaseDataMap = aggregatePurchaseData(allInventories);
+
+        int rowNum = 2; // Start from row 2 to leave space for title and headers
+        for (Map.Entry<String, Map<String, PurchaseData>> productEntry : purchaseDataMap.entrySet()) {
+            String productName = productEntry.getKey();
+            BigDecimal productTotalInAmount = BigDecimal.ZERO;
+            int productTotalQuantity = 0;
+
+            for (Map.Entry<String, PurchaseData> dateEntry : productEntry.getValue().entrySet()) {
+                PurchaseData purchaseData = dateEntry.getValue();
+                Row row = purchaseSummarySheet.createRow(rowNum++);
+                row.createCell(0).setCellValue(dateEntry.getKey()); // Entry Date
+                row.createCell(1).setCellValue(productName); // Product Name
+                row.createCell(2).setCellValue("Purchase of Inventory"); // Description
+                row.createCell(3).setCellValue("₱ " + purchaseData.getTotalInAmount().toString()); // Total In Amount
+                row.createCell(4).setCellValue(purchaseData.getTotalQuantity()); // Total Quantity
+
+                // Accumulate totals
+                productTotalInAmount = productTotalInAmount.add(purchaseData.getTotalInAmount());
+                productTotalQuantity += purchaseData.getTotalQuantity();
+            }
+
+            // Add total summary row for the product
+            Row summaryRow = purchaseSummarySheet.createRow(rowNum++);
+            summaryRow.createCell(0).setCellValue("Total for " + productName); // Label
+            summaryRow.createCell(1).setCellValue(""); // Empty cell
+            summaryRow.createCell(2).setCellValue(""); // Empty cell
+            summaryRow.createCell(3).setCellValue("₱ " + productTotalInAmount.toString()); // Total In Amount
+            summaryRow.createCell(4).setCellValue(productTotalQuantity); // Total Quantity
+            summaryRow.createCell(5).setCellValue("₱ " + productTotalInAmount.toString()); // Summary
+
+            // Apply the same summary style
+            CellStyle summaryStyle = workbook.createCellStyle();
+            Font summaryFont = workbook.createFont();
+            summaryFont.setBold(true); // Bold font
+            summaryFont.setColor(IndexedColors.WHITE.getIndex()); // White font color
+            summaryStyle.setFont(summaryFont);
+
+            // Custom color for summary row background
+            XSSFColor summaryColor = new XSSFColor(new byte[] {86, 61, 45});
+            summaryStyle.setFillForegroundColor(summaryColor);
+            summaryStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+            // Set border style for the summary row
+            summaryStyle.setBorderBottom(BorderStyle.THICK);
+            summaryStyle.setBorderTop(BorderStyle.THICK);
+            summaryStyle.setBorderLeft(BorderStyle.THICK);
+            summaryStyle.setBorderRight(BorderStyle.THICK);
+            summaryStyle.setAlignment(HorizontalAlignment.CENTER); // Center alignment
+            summaryStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+
+            // Apply the style to each cell in the summary row
+            for (int i = 0; i < 6; i++) {
+                summaryRow.getCell(i).setCellStyle(summaryStyle);
+            }
+
+            // Add an extra blank row below the summary row for spacing
+            rowNum += 2;
+        }
+
+        // Auto-size columns
+        for (int i = 0; i < 6; i++) {
+            purchaseSummarySheet.autoSizeColumn(i);
+        }
+    }
+
+    // Example method to aggregate purchase data
+    private Map<String, Map<String, PurchaseData>> aggregatePurchaseData(List<Inventory> inventories) {
+        return inventories.stream()
+                .filter(inventory -> "Purchase of Inventory".equals(inventory.getDescription())) // Filter purchases only
+                .collect(Collectors.groupingBy(
+                        Inventory::getProductName,
+                        Collectors.groupingBy(
+                                Inventory::getEntryDate,
+                                Collectors.collectingAndThen(
+                                        Collectors.toList(),
+                                        list -> {
+                                            BigDecimal totalInAmount = list.stream()
+                                                    .map(Inventory::getInAmount)
+                                                    .filter(Objects::nonNull)
+                                                    .reduce(BigDecimal.ZERO, BigDecimal::add);
+                                            int totalQuantity = list.stream().mapToInt(Inventory::getQuantity).sum();
+                                            return new PurchaseData(totalInAmount, totalQuantity);
+                                        }
+                                )
+                        )
+                ));
+    }
+
+    // PurchaseData class to hold aggregated purchase data
+    public class PurchaseData {
+        private BigDecimal totalInAmount;
+        private int totalQuantity;
+
+        public PurchaseData(BigDecimal totalInAmount, int totalQuantity) {
+            this.totalInAmount = totalInAmount;
+            this.totalQuantity = totalQuantity;
+        }
+
+        public BigDecimal getTotalInAmount() {
+            return totalInAmount;
+        }
+
+        public int getTotalQuantity() {
+            return totalQuantity;
+        }
+    }
+
+
 }
