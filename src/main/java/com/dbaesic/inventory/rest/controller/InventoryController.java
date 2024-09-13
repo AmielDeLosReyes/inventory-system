@@ -76,10 +76,11 @@ public class InventoryController {
 
         // Determine if the entry is for damaged goods
         boolean isDamaged = "Damaged Goods".equals(inventory.getDescription());
+        boolean isInitialInventory = "Initial Inventory".equals(inventory.getDescription());
 
         // Check description for purchase, sale, or damaged goods
-        if ("Purchase of Inventory".equals(inventory.getDescription())) {
-            log.info("Processing Purchase of Inventory...");
+        if ("Purchase of Inventory".equals(inventory.getDescription()) || isInitialInventory) {
+            log.info("Processing Purchase of Inventory or Initial Inventory...");
             inventory.setInAmount(inventory.getCost().multiply(BigDecimal.valueOf(inventory.getQuantity())));
             inventory.setOutAmount(BigDecimal.ZERO);
         } else if ("Sale of Merchandise".equals(inventory.getDescription()) || isDamaged) {
@@ -97,7 +98,8 @@ public class InventoryController {
                     inventory.getEntryDate(),
                     inventory.getCost(),
                     inventory.getQuantity(),
-                    isDamaged); // Pass the isDamaged parameter
+                    isDamaged,
+                    isInitialInventory);
             return ResponseEntity.ok().body("{\"message\":\"Entry saved successfully\"}");
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("{\"error\":\"" + e.getMessage() + "\"}");

@@ -130,7 +130,7 @@ document.getElementById('inventoryForm').addEventListener('submit', function(eve
         currentBalance = latestBalance;
 
         // Handle purchase
-        if (description === 'Purchase of Inventory') {
+        if (description === 'Purchase of Inventory' || description === 'Initial Inventory') {
             inAmount = cost * quantity;
             currentBalance += inAmount;
 
