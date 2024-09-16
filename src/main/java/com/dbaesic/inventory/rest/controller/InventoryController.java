@@ -106,9 +106,6 @@ public class InventoryController {
         }
     }
 
-
-
-
     @GetMapping("/latest-balance")
     public ResponseEntity<Map<String, Object>> getLatestBalance(@RequestParam String productName) {
         BigDecimal latestBalance = inventoryService.getLatestBalance(productName); // Fetch from service
@@ -116,6 +113,15 @@ public class InventoryController {
         response.put("latestBalance", latestBalance);
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/latest-quantity")
+    public ResponseEntity<Map<String, Object>> getLatestQuantity(@RequestParam String productName) {
+        Integer latestQuantity = inventoryService.getLatestQuantity(productName); // Fetch from service
+        Map<String, Object> response = new HashMap<>();
+        response.put("latestQuantity", latestQuantity);
+        return ResponseEntity.ok(response);
+    }
+
 
     @DeleteMapping("/delete/{id}")
     public ResponseEntity<Void> deleteEntry(@PathVariable("id") Long id) {

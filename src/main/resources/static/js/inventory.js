@@ -5,6 +5,7 @@ const inventoryTables = document.getElementById('inventoryTables');
 const exportButton = document.getElementById('exportButton');
 const costInput = document.getElementById('cost');
 const currentBalanceInput = document.getElementById('currentBalance');
+const currentQuantityInput = document.getElementById('currentQuantity');
 const monthSelect = document.getElementById('monthSelect'); // New dropdown for month selection
 let currentProduct = '';
 let selectedMonth = '';
@@ -61,6 +62,14 @@ function fetchLatestBalance(productName) {
         .catch(error => console.error('Error fetching latest balance:', error));
 }
 
+// Fetch the latest quantity for the selected product
+function fetchLatestQuantity(productName) {
+    return fetch(`/inventory/latest-quantity?productName=${encodeURIComponent(productName)}`)
+        .then(response => response.json())
+        .then(data => data.latestQuantity || 0)
+        .catch(error => console.error('Error fetching latest quantity:', error));
+}
+
 // Handle month selection
 monthSelect.addEventListener('change', function() {
     selectedMonth = monthSelect.value;
@@ -83,7 +92,13 @@ productSelect.addEventListener('change', function() {
         }
         updateTables();
     });
+
+    // Fetch and update current quantity
+    fetchLatestQuantity(currentProduct).then(latestQuantity => {
+        currentQuantityInput.value = (latestQuantity <= 0 || latestQuantity === undefined) ? 'Out of Stock!' : latestQuantity;
+    });
 });
+
 
 
 // Handle month selection
@@ -114,7 +129,6 @@ function clearErrorMessage() {
 }
 
 // Handle inventory form submission
-// Handle inventory form submission
 document.getElementById('inventoryForm').addEventListener('submit', function(event) {
     event.preventDefault();
     const date = document.getElementById('entryDate').value; // Retrieve the date
@@ -125,34 +139,43 @@ document.getElementById('inventoryForm').addEventListener('submit', function(eve
     let inAmount = 0;
     let outAmount = 0;
     let currentBalance = 0;
+    let currentQuantity = 0; // Add this variable to track the quantity
 
-    fetchLatestBalance(currentProduct).then(latestBalance => {
+    // Fetch the latest balance and quantity
+    Promise.all([
+        fetchLatestBalance(currentProduct),
+        fetchLatestQuantity(currentProduct) // Fetch latest quantity
+    ]).then(([latestBalance, latestQuantity]) => {
         currentBalance = latestBalance;
+        currentQuantity = latestQuantity; // Set the current quantity
 
         // Handle purchase
         if (description === 'Purchase of Inventory' || description === 'Initial Inventory') {
             inAmount = cost * quantity;
             currentBalance += inAmount;
+            currentQuantity += quantity; // Increase the quantity for purchases
 
         // Handle sale
         } else if (description === 'Sale of Merchandise') {
             outAmount = cost * quantity;
 
-            if (outAmount > currentBalance) {
+            if (quantity > currentQuantity) { // Check against currentQuantity
                 showErrorMessage('You can\'t sell more than the available stock!');
                 return; // Exit if not valid
             }
             currentBalance -= outAmount;
+            currentQuantity -= quantity; // Decrease the quantity for sales
 
         // Handle damaged goods separately
         } else if (description === 'Damaged Goods') {
             outAmount = cost * quantity;
 
-            if (outAmount > currentBalance) {
+            if (quantity > currentQuantity) { // Check against currentQuantity
                 showErrorMessage('You can\'t report damaged goods more than the available stock!');
                 return; // Exit if not valid
             }
             currentBalance -= outAmount;
+            currentQuantity -= quantity; // Decrease the quantity for damaged goods
         }
 
         // Entry object for saving
@@ -165,6 +188,7 @@ document.getElementById('inventoryForm').addEventListener('submit', function(eve
             inAmount: inAmount,
             outAmount: outAmount,
             balance: currentBalance,
+            latestQuantity: currentQuantity, // Include latestQuantity in the entry
             remarks: '' // Add any remarks if needed
         };
 
@@ -184,9 +208,15 @@ document.getElementById('inventoryForm').addEventListener('submit', function(eve
         .then(response => response.json())
         .then(data => {
             entry.id = data.id; // Update entry with ID
-            fetchLatestBalance(currentProduct).then(latestBalance => {
+            Promise.all([
+                fetchLatestBalance(currentProduct),
+                fetchLatestQuantity(currentProduct) // Fetch the latest quantity again
+            ]).then(([latestBalance, latestQuantity]) => {
                 const balanceText = (latestBalance <= 0 || latestBalance === undefined) ? 'Out of Stock!' : latestBalance.toFixed(2);
                 currentBalanceInput.value = balanceText;
+
+                const quantityText = (latestQuantity <= 0 || latestQuantity === undefined) ? 'Out of Stock!' : latestQuantity;
+                currentQuantityInput.value = quantityText; // Update the quantity input field
 
                 clearErrorMessage(); // Clear any existing error messages
                 updateTables(); // Update the UI tables
@@ -263,7 +293,7 @@ function updateTables() {
 }
 
 
-// delete entry for delete button
+// Delete entry for delete button
 function deleteEntry(entryId) {
     if (confirm('Are you sure you want to delete this entry?')) {
         fetch(`/inventory/delete/${entryId}`, {
@@ -290,9 +320,18 @@ function deleteEntry(entryId) {
             }
         })
         .then(() => {
-            // Fetch and update the current balance after successful deletion
-            fetchLatestBalance(currentProduct).then(latestBalance => {
+            // Fetch and update the current balance and quantity after successful deletion
+            Promise.all([
+                fetchLatestBalance(currentProduct),
+                fetchLatestQuantity(currentProduct) // Fetch the latest quantity
+            ])
+            .then(([latestBalance, latestQuantity]) => {
                 currentBalanceInput.value = (latestBalance <= 0 || latestBalance === undefined) ? 'Out of Stock!' : latestBalance.toFixed(2);
+
+                // Update the quantity input field
+                const quantityText = (latestQuantity <= 0 || latestQuantity === undefined) ? 'Out of Stock!' : latestQuantity;
+                currentQuantityInput.value = quantityText;
+
                 updateTables(); // Update the tables to reflect changes
                 alert('Entry deleted successfully!');
             });
@@ -303,6 +342,7 @@ function deleteEntry(entryId) {
         });
     }
 }
+
 
 // Handle export to Excel
 exportButton.addEventListener('click', function() {

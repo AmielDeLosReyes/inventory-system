@@ -101,6 +101,22 @@ public class InventoryService {
         return balance;
     }
 
+    public Integer getLatestQuantity(String productName) {
+        List<Inventory> entries = inventoryRepository.findByProductName(productName);
+
+        // Calculate the quantity by iterating through entries
+        int quantity = 0;
+        for (Inventory entry : entries) {
+            if ("Purchase of Inventory".equals(entry.getDescription()) || "Initial Inventory".equals(entry.getDescription())) {
+                quantity += entry.getQuantity(); // Add the quantity for inventory purchases
+            } else if ("Sale of Merchandise".equals(entry.getDescription()) || "Damaged Goods".equals(entry.getDescription())) {
+                quantity -= entry.getQuantity(); // Subtract the quantity for sales or damaged goods
+            }
+        }
+        return quantity;
+    }
+
+
     public List<Inventory> getAllSales() {
         return inventoryRepository.findAllSales();
     }
