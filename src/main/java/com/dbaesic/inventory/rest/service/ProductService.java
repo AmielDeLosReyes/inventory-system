@@ -28,10 +28,11 @@ public class ProductService {
 
     public Product getProductByName(String name) {
         return productRepository.findAll().stream()
-                .filter(product -> product.getName().equals(name))
+                .filter(product -> product.getName().equals(name) && "1".equals(product.getStatusCode()))
                 .findFirst()
                 .orElse(null);
     }
+
 
     public void saveProduct(Product product) {
         // Set default values
